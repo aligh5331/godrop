@@ -67,7 +67,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 	return nil
 }
 
-func (uc *AuthUseCase) login(ctx context.Context, email, password string) (*entity.User, error) {
+func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*entity.User, error) {
 	if err := uc.validator.ValidateEmail(email); err != nil {
 		return nil, err
 	}
