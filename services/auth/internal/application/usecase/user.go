@@ -75,13 +75,13 @@ func (uc *AuthUseCase) login(ctx context.Context, email, password string) (*enti
 	user, err := uc.repo.FindByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
-			return nil, domain.ErrUserNotFound
+			return nil, domain.ErrInvalidCredentials
 		}
 		return nil, fmt.Errorf("find user by email: %w", err)
 	}
 
 	if !uc.hasher.CheckPasswordHash(password, user.Password()) {
-		return nil, domain.ErrWrongPassword
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	return user, nil
