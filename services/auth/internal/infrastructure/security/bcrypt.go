@@ -1,8 +1,10 @@
 package security
 
 import (
+	"auth/internal/domain"
 	"auth/internal/domain/entity"
 	"auth/internal/domain/repository"
+	"errors"
 	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
@@ -22,6 +24,9 @@ func NewHasher(cost int) repository.Hasher {
 func (h *BcryptHasher) Hash(password string) (entity.HashedPassword, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), h.cost)
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrPasswordTooLong) {
+			return "", domain.ErrPasswordTooLong
+		}
 		return "", fmt.Errorf("generating bcrypt hash: %w", err)
 	}
 	return entity.HashedPassword(bytes), nil
