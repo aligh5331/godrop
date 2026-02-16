@@ -119,3 +119,13 @@ func (u *User) ChangePassword(hashedPassword HashedPassword) error {
 	u.updatedAt = time.Now()
 	return nil
 }
+
+func (u *User) ChangeName(newName string) error {
+	newName = strings.TrimSpace(newName)
+	if newName == "" {
+		return domain.ErrEmptyName
+	}
+	u.name = newName
+	u.updatedAt = time.Now()
+	return nil
+}

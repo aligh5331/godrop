@@ -121,3 +121,22 @@ func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, 
 
 	return nil
 }
+
+func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) error {
+	u, uErr := uc.repo.FindById(ctx, userID)
+	if uErr != nil {
+		if errors.Is(uErr, domain.ErrUserNotFound) {
+			return domain.ErrUserNotFound
+		}
+		return fmt.Errorf("repo find user by id: %w", uErr)
+	}
+
+	if err := u.ChangeName(name); err != nil {
+		return err
+	}
+
+	if err := uc.repo.Update(ctx, u); err != nil {
+		return fmt.Errorf("repo update: %w", err)
+	}
+	return nil
+}
