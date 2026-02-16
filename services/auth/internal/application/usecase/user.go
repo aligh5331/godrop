@@ -110,16 +110,9 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*enti
 func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
 
 	//password check
-	u, uErr := uc.repo.FindById(ctx, userID)
+	u, uErr := uc.checkPassword(ctx, userID, oldPassword)
 	if uErr != nil {
-		if errors.Is(uErr, domain.ErrUserNotFound) {
-			return domain.ErrInvalidCredentials
-		}
-		return fmt.Errorf("repo find user by id: %w", uErr)
-	}
-
-	if !uc.hasher.CheckPasswordHash(oldPassword, u.Password()) {
-		return domain.ErrInvalidCredentials
+		return uErr
 	}
 
 	//changing password
@@ -160,4 +153,20 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) erro
 		return fmt.Errorf("repo update: %w", err)
 	}
 	return nil
+}
+
+// password check
+func (uc *AuthUseCase) checkPassword(ctx context.Context, userID, password string) (*entity.User, error) {
+	u, uErr := uc.repo.FindById(ctx, userID)
+	if uErr != nil {
+		if errors.Is(uErr, domain.ErrUserNotFound) {
+			return nil, domain.ErrInvalidCredentials
+		}
+		return nil, fmt.Errorf("repo find user by id: %w", uErr)
+	}
+
+	if !uc.hasher.CheckPasswordHash(password, u.Password()) {
+		return nil, domain.ErrInvalidCredentials
+	}
+	return u, nil
 }
