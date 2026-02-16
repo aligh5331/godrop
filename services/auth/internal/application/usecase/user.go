@@ -42,7 +42,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 
 	if _, err := uc.repo.FindByEmail(ctx, email); err != nil {
 		if !errors.Is(err, domain.ErrUserNotFound) {
-			return fmt.Errorf("find user by email: %w", err)
+			return fmt.Errorf("repo find user by email: %w", err)
 		}
 	} else {
 		return domain.ErrEmailAlreadyExists
@@ -60,9 +60,8 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 		return dErr
 	}
 
-	rErr := uc.repo.Create(ctx, du)
-	if rErr != nil {
-		return fmt.Errorf("repo create : %w", rErr)
+	if err := uc.repo.Create(ctx, du); err != nil {
+		return fmt.Errorf("repo create : %w", err)
 	}
 	return nil
 }
@@ -77,7 +76,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*enti
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return nil, domain.ErrInvalidCredentials
 		}
-		return nil, fmt.Errorf("find user by email: %w", err)
+		return nil, fmt.Errorf("repo find user by email: %w", err)
 	}
 
 	if !uc.hasher.CheckPasswordHash(password, user.Password()) {
