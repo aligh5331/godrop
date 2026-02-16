@@ -155,6 +155,33 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) erro
 	return nil
 }
 
+func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEmail string) error {
+
+	newEmail = strings.TrimSpace(newEmail)
+	if err := uc.validator.ValidateEmail(newEmail); err != nil {
+		return err
+	}
+
+	u, uErr := uc.checkPassword(ctx, userID, password)
+	if uErr != nil {
+		return uErr
+	}
+
+	if !uc.verifier.IsVerified(ctx, newEmail) {
+		return domain.ErrEmailNotVerified
+	}
+
+	if err := u.ChangeEmail(newEmail); err != nil {
+		return err
+	}
+
+	if err := uc.repo.Update(ctx, u); err != nil {
+		return fmt.Errorf("repo update: %w", err)
+	}
+
+	return nil
+}
+
 // password check
 func (uc *AuthUseCase) checkPassword(ctx context.Context, userID, password string) (*entity.User, error) {
 	u, uErr := uc.repo.FindById(ctx, userID)

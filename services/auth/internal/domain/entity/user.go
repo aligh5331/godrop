@@ -129,3 +129,13 @@ func (u *User) ChangeName(newName string) error {
 	u.updatedAt = time.Now()
 	return nil
 }
+
+func (u *User) ChangeEmail(newEmail string) error {
+	newEmail = strings.TrimSpace(newEmail)
+	if newEmail == "" {
+		return domain.ErrEmptyEmail
+	}
+	u.email = newEmail
+	u.updatedAt = time.Now()
+	return nil
+}
