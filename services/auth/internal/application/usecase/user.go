@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -15,6 +16,7 @@ type AuthUseCase struct {
 	hasher    repository.Hasher
 	idGen     repository.IdGenerator
 	validator repository.Validator
+	verifier  repository.EmailVerifier
 }
 
 func NewAuthUseCase(
@@ -22,13 +24,28 @@ func NewAuthUseCase(
 	hasher repository.Hasher,
 	idGen repository.IdGenerator,
 	validator repository.Validator,
+	verifier repository.EmailVerifier,
 ) *AuthUseCase {
 	return &AuthUseCase{
 		repo:      repo,
 		hasher:    hasher,
 		idGen:     idGen,
 		validator: validator,
+		verifier:  verifier,
 	}
+}
+
+func (uc *AuthUseCase) VerifyEmail(ctx context.Context, email string) error {
+
+	email = strings.TrimSpace(email)
+	if err := uc.validator.ValidateEmail(email); err != nil {
+		return err
+	}
+
+	if err := uc.verifier.Verify(ctx, email); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *AuthUseCase) Register(ctx context.Context, email, name, password string) error {
@@ -46,6 +63,10 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 		}
 	} else {
 		return domain.ErrEmailAlreadyExists
+	}
+
+	if !uc.verifier.IsVerified(ctx, email) {
+		return domain.ErrEmailNotVerified
 	}
 
 	hp, hErr := uc.hasher.Hash(password)

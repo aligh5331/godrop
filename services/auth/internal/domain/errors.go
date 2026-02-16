@@ -24,6 +24,7 @@ var (
 	ErrWrongPassword      = errors.New("wrong password")
 	ErrEmailAlreadyExists = errors.New("email already exists")
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrEmailNotVerified   = errors.New("email is not verified")
 )
 
 // Password errors
