@@ -33,7 +33,7 @@ func (h *BcryptHasher) Hash(password string) (entity.HashedPassword, error) {
 }
 
 func (h *BcryptHasher) CheckPasswordHash(password string, hash entity.HashedPassword) bool {
-	if hash == "" {
+	if hash == "" || len(password) > 72 {
 		// Perform dummy bcrypt to maintain constant timing
 		_ = bcrypt.CompareHashAndPassword([]byte("$2a$14$dummy"), []byte(password))
 		return false
