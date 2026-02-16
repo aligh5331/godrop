@@ -86,3 +86,39 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*enti
 
 	return user, nil
 }
+
+func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+
+	//password check
+	u, uErr := uc.repo.FindById(ctx, userID)
+	if uErr != nil {
+		if errors.Is(uErr, domain.ErrUserNotFound) {
+			return domain.ErrInvalidCredentials
+		}
+		return fmt.Errorf("repo find user by id: %w", uErr)
+	}
+
+	if !uc.hasher.CheckPasswordHash(oldPassword, u.Password()) {
+		return domain.ErrInvalidCredentials
+	}
+
+	//changing password
+	if err := uc.validator.ValidatePassword(newPassword); err != nil {
+		return err
+	}
+
+	hp, hErr := uc.hasher.Hash(newPassword)
+	if hErr != nil {
+		return fmt.Errorf("hash password: %w", hErr)
+	}
+
+	if err := u.ChangePassword(hp); err != nil {
+		return err
+	}
+
+	if err := uc.repo.Update(ctx, u); err != nil {
+		return fmt.Errorf("repo update: %w", err)
+	}
+
+	return nil
+}

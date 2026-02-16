@@ -109,3 +109,13 @@ func (u *User) CreatedAt() time.Time {
 func (u *User) UpdatedAt() time.Time {
 	return u.updatedAt
 }
+
+func (u *User) ChangePassword(hashedPassword HashedPassword) error {
+	if strings.TrimSpace(string(hashedPassword)) == "" {
+		return domain.ErrEmptyPassword
+	}
+
+	u.password = hashedPassword
+	u.updatedAt = time.Now()
+	return nil
+}
