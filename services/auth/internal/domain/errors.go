@@ -30,7 +30,7 @@ var (
 // Password errors
 
 var (
-	ErrTooLongPassword  = &ValidationError{Field: "password", Message: "password too long"}
+	ErrPasswordTooLong  = &ValidationError{Field: "password", Message: "password too long"}
 	ErrPasswordTooShort = &ValidationError{Field: "password", Message: "password too short"}
 	ErrPasswordTooWeak  = &ValidationError{Field: "password", Message: "password too weak"}
 	ErrPasswordNotMatch = &ValidationError{Field: "password", Message: "password not match"}
