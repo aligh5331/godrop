@@ -1,0 +1,132 @@
+package gorm
+
+import (
+	"auth/internal/domain"
+	"auth/internal/domain/entity"
+	"auth/internal/domain/repository"
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"gorm.io/gorm"
+)
+
+type UserRepository struct {
+	db *gorm.DB
+}
+
+func (u *UserRepository) Create(ctx context.Context, user *entity.User) error {
+
+	gu := toGormUser(user)
+	if err := u.db.WithContext(ctx).Create(gu).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (u *UserRepository) FindById(ctx context.Context, userUUID string) (*entity.User, error) {
+
+	gu := &gUser{}
+	if err := u.db.WithContext(ctx).Where("id = ?", userUUID).First(gu).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("gorm find by id: %w", err)
+	}
+	user, dErr := toDomainUser(gu)
+	if dErr != nil {
+		return nil, dErr
+	}
+	return user, nil
+}
+
+func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
+
+	var gu = &gUser{}
+	if err := u.db.WithContext(ctx).Where("email = ?", email).First(gu).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("gorm find by email: %w", err)
+	}
+	user, dErr := toDomainUser(gu)
+	if dErr != nil {
+		return nil, dErr
+	}
+	return user, nil
+}
+
+func (u *UserRepository) Update(ctx context.Context, user *entity.User) error {
+
+	res := u.db.WithContext(ctx).
+		Model(&gUser{}).
+		Where("id = ?", user.Id()).
+		Updates(map[string]interface{}{
+			"name":       user.Name(),
+			"email":      user.Email(),
+			"password":   string(user.Password()),
+			"updated_at": user.UpdatedAt(),
+		})
+
+	if res.Error != nil {
+		return fmt.Errorf("gorm update user: %w", res.Error)
+	}
+
+	if res.RowsAffected == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
+
+func (u *UserRepository) Delete(ctx context.Context, user *entity.User) error {
+
+	gu := toGormUser(user)
+	if err := u.db.WithContext(ctx).Delete(gu).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewUserRepository(db *gorm.DB) repository.UserRepository {
+	return &UserRepository{
+		db: db,
+	}
+}
+
+type gUser struct {
+	ID        string `gorm:"primarykey"`
+	Name      string `gorm:"type:varchar(255);not null"`
+	Email     string `gorm:"type:varchar(255);uniqueIndex;not null"`
+	Password  string `gorm:"type:varchar(255);not null"` // bcrypt outputs 60 chars
+	Active    bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	DeletedAt gorm.DeletedAt `gorm:"index"`
+}
+
+func (gUser) TableName() string {
+	return "users"
+}
+
+func toGormUser(u *entity.User) *gUser {
+	return &gUser{
+		ID:        u.Id(),
+		Name:      u.Name(),
+		Email:     u.Email(),
+		Password:  string(u.Password()),
+		CreatedAt: u.CreatedAt(),
+		UpdatedAt: u.UpdatedAt(),
+	}
+}
+
+func toDomainUser(g *gUser) (*entity.User, error) {
+	return entity.NewUser(
+		g.ID,
+		g.Name,
+		g.Email,
+		entity.HashedPassword(g.Password),
+		g.CreatedAt,
+		g.UpdatedAt,
+	)
+}
