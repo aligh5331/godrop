@@ -12,11 +12,11 @@ import (
 )
 
 type AuthUseCase struct {
-	repo      repository.UserRepository
-	hasher    repository.Hasher
-	idGen     repository.IdGenerator
-	validator repository.Validator
-	verifier  repository.EmailVerifier
+	repo          repository.UserRepository
+	hasher        repository.Hasher
+	idGen         repository.IdGenerator
+	validator     repository.Validator
+	emailVerifier repository.EmailVerifier
 }
 
 func NewAuthUseCase(
@@ -24,14 +24,14 @@ func NewAuthUseCase(
 	hasher repository.Hasher,
 	idGen repository.IdGenerator,
 	validator repository.Validator,
-	verifier repository.EmailVerifier,
+	emailVerifier repository.EmailVerifier,
 ) *AuthUseCase {
 	return &AuthUseCase{
-		repo:      repo,
-		hasher:    hasher,
-		idGen:     idGen,
-		validator: validator,
-		verifier:  verifier,
+		repo:          repo,
+		hasher:        hasher,
+		idGen:         idGen,
+		validator:     validator,
+		emailVerifier: emailVerifier,
 	}
 }
 
@@ -42,7 +42,7 @@ func (uc *AuthUseCase) VerifyEmail(ctx context.Context, email string) error {
 		return err
 	}
 
-	if err := uc.verifier.Verify(ctx, email); err != nil {
+	if err := uc.emailVerifier.VerifyEmail(ctx, email); err != nil {
 		return err
 	}
 	return nil
@@ -65,7 +65,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 		return domain.ErrEmailAlreadyExists
 	}
 
-	if !uc.verifier.IsVerified(ctx, email) {
+	if !uc.emailVerifier.IsEmailVerified(ctx, email) {
 		return domain.ErrEmailNotVerified
 	}
 
@@ -167,7 +167,7 @@ func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEma
 		return uErr
 	}
 
-	if !uc.verifier.IsVerified(ctx, newEmail) {
+	if !uc.emailVerifier.IsEmailVerified(ctx, newEmail) {
 		return domain.ErrEmailNotVerified
 	}
 
