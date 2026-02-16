@@ -76,7 +76,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 
 	newId := uc.idGen.NewId()
 	now := time.Now()
-	du, dErr := entity.NewUser(newId, name, email, hp, true, now, now)
+	du, dErr := entity.NewUser(newId, name, email, hp, now, now)
 	if dErr != nil {
 		return dErr
 	}

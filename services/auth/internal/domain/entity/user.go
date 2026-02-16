@@ -17,14 +17,13 @@ type User struct {
 	updatedAt time.Time
 }
 
-func NewUser(id, name, email string, password HashedPassword, active bool, createdAt time.Time, updatedAt time.Time) (*User, error) {
+func NewUser(id, name, email string, password HashedPassword, createdAt time.Time, updatedAt time.Time) (*User, error) {
 
 	var user = &User{
 		id:        strings.TrimSpace(id),
 		name:      strings.TrimSpace(name),
 		email:     strings.TrimSpace(email),
 		password:  password,
-		active:    active,
 		createdAt: createdAt.UTC(),
 		updatedAt: updatedAt.UTC(),
 	}
@@ -75,16 +74,6 @@ func (u *User) UpdateProfile(name string, now time.Time) error {
 	return nil
 }
 
-func (u *User) Activate(now time.Time) {
-	u.active = true
-	u.updatedAt = now.UTC()
-
-}
-func (u *User) Deactivate(now time.Time) {
-	u.active = false
-	u.updatedAt = now.UTC()
-}
-
 func (u *User) Id() string {
 	return u.id
 }
@@ -93,9 +82,6 @@ func (u *User) Name() string {
 }
 func (u *User) Email() string {
 	return u.email
-}
-func (u *User) IsActive() bool {
-	return u.active
 }
 
 func (u *User) Password() HashedPassword {
