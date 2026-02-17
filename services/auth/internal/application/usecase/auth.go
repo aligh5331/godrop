@@ -1,9 +1,11 @@
 package usecase
 
 import (
+	"auth/internal/application/dto"
+	ar "auth/internal/application/repository"
 	"auth/internal/domain"
 	"auth/internal/domain/entity"
-	"auth/internal/domain/repository"
+	dr "auth/internal/domain/repository"
 	"context"
 	"errors"
 	"fmt"
@@ -12,21 +14,24 @@ import (
 )
 
 type AuthUseCase struct {
-	repo          repository.UserRepository
-	hasher        repository.PasswordHasher
-	idGen         repository.IdGenerator
-	validator     repository.Validator
-	emailVerifier repository.EmailVerifier
+	sessionUc     ar.SessionUseCase
+	repo          dr.UserRepository
+	hasher        dr.PasswordHasher
+	idGen         dr.IdGenerator
+	validator     dr.Validator
+	emailVerifier dr.EmailVerifier
 }
 
 func NewAuthUseCase(
-	repo repository.UserRepository,
-	hasher repository.PasswordHasher,
-	idGen repository.IdGenerator,
-	validator repository.Validator,
-	emailVerifier repository.EmailVerifier,
-) *AuthUseCase {
+	sessionUc ar.SessionUseCase,
+	repo dr.UserRepository,
+	hasher dr.PasswordHasher,
+	idGen dr.IdGenerator,
+	validator dr.Validator,
+	emailVerifier dr.EmailVerifier,
+) ar.AuthUseCase {
 	return &AuthUseCase{
+		sessionUc:     sessionUc,
 		repo:          repo,
 		hasher:        hasher,
 		idGen:         idGen,
@@ -35,64 +40,12 @@ func NewAuthUseCase(
 	}
 }
 
-func (uc *AuthUseCase) VerifyEmail(ctx context.Context, email string) error {
-
-	email = strings.TrimSpace(email)
-	if err := uc.validator.ValidateEmail(email); err != nil {
-		return err
-	}
-
-	if err := uc.emailVerifier.VerifyEmail(ctx, email); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (uc *AuthUseCase) Register(ctx context.Context, email, name, password string) error {
-	if err := uc.validator.ValidatePassword(password); err != nil {
-		return err
-	}
-
-	if err := uc.validator.ValidateEmail(email); err != nil {
-		return err
-	}
-
-	if _, err := uc.repo.FindByEmail(ctx, email); err != nil {
-		if !errors.Is(err, domain.ErrUserNotFound) {
-			return fmt.Errorf("repo find user by email: %w", err)
-		}
-	} else {
-		return domain.ErrEmailAlreadyExists
-	}
-
-	if !uc.emailVerifier.IsEmailVerified(ctx, email) {
-		return domain.ErrEmailNotVerified
-	}
-
-	hp, err := uc.hasher.Hash(password)
-	if err != nil {
-		return fmt.Errorf("hash password: %w", err)
-	}
-
-	newId := uc.idGen.NewId()
-	now := time.Now()
-	du, err := entity.NewUser(newId, name, email, hp, now, now)
-	if err != nil {
-		return err
-	}
-
-	if err = uc.repo.Create(ctx, du); err != nil {
-		return fmt.Errorf("repo create : %w", err)
-	}
-	return nil
-}
-
-func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*entity.User, error) {
-	if err := uc.validator.ValidateEmail(email); err != nil {
+func (uc *AuthUseCase) Login(ctx context.Context, inputDTO dto.LoginInputDTO) (*dto.LoginDTO, error) {
+	if err := uc.validator.ValidateEmail(inputDTO.Email); err != nil {
 		return nil, err
 	}
 
-	user, err := uc.repo.FindByEmail(ctx, email)
+	user, err := uc.repo.FindByEmail(ctx, inputDTO.Email)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return nil, domain.ErrInvalidCredentials
@@ -100,44 +53,135 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*enti
 		return nil, fmt.Errorf("repo find user by email: %w", err)
 	}
 
-	if !uc.hasher.CheckPasswordHash(password, user.Password()) {
+	if !uc.hasher.CheckPasswordHash(inputDTO.Password, user.Password()) {
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	return user, nil
+	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id())
+	if err != nil {
+		return nil, fmt.Errorf("create new session: %w", err)
+	}
+
+	userDTO := &dto.UserDTO{
+		ID:    user.Id(),
+		Name:  user.Name(),
+		Email: user.Email(),
+	}
+
+	loginDTO := &dto.LoginDTO{
+		User:   userDTO,
+		Tokens: tokens,
+	}
+
+	return loginDTO, nil
 }
 
-func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
+func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputDTO) (*dto.RegisterDTO, error) {
+	if err := uc.validator.ValidatePassword(inputDTO.Password); err != nil {
+		return nil, err
+	}
 
-	//password check
-	u, err := uc.checkPassword(ctx, userID, oldPassword)
+	if err := uc.validator.ValidateEmail(inputDTO.Email); err != nil {
+		return nil, err
+	}
+
+	if _, err := uc.repo.FindByEmail(ctx, inputDTO.Email); err != nil {
+		if !errors.Is(err, domain.ErrUserNotFound) {
+			return nil, fmt.Errorf("repo find user by email: %w", err)
+		}
+	} else {
+		return nil, domain.ErrEmailAlreadyExists
+	}
+
+	if !uc.emailVerifier.IsEmailVerified(ctx, inputDTO.Email) {
+		return nil, domain.ErrEmailNotVerified
+	}
+
+	hp, err := uc.hasher.Hash(inputDTO.Password)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("hash password: %w", err)
+	}
+
+	newId := uc.idGen.NewId()
+	now := time.Now()
+	user, err := entity.NewUser(newId, inputDTO.Name, inputDTO.Email, hp, now, now)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = uc.repo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("repo create : %w", err)
+	}
+
+	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id())
+	if err != nil {
+		return nil, fmt.Errorf("create new session: %w", err)
+	}
+
+	userDTO := &dto.UserDTO{
+		ID:    user.Id(),
+		Name:  user.Name(),
+		Email: user.Email(),
+	}
+
+	registerDTO := &dto.RegisterDTO{
+		User:   userDTO,
+		Tokens: tokens,
+	}
+
+	return registerDTO, nil
+}
+
+func (uc *AuthUseCase) ChangePassword(ctx context.Context, inputDTO dto.ChangePasswordDTO) (*dto.LoginDTO, error) {
+	//password check
+	user, err := uc.checkPassword(ctx, inputDTO.UserID, inputDTO.OldPass)
+	if err != nil {
+		return nil, err
 	}
 
 	//changing password
-	if err = uc.validator.ValidatePassword(newPassword); err != nil {
-		return err
+	if err = uc.validator.ValidatePassword(inputDTO.NewPass); err != nil {
+		return nil, err
 	}
 
-	hp, err := uc.hasher.Hash(newPassword)
+	hp, err := uc.hasher.Hash(inputDTO.NewPass)
 	if err != nil {
-		return fmt.Errorf("hash password: %w", err)
+		return nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	if err = u.ChangePassword(hp, time.Now()); err != nil {
-		return err
+	if err = user.ChangePassword(hp, time.Now()); err != nil {
+		return nil, err
 	}
 
-	if err = uc.repo.Update(ctx, u); err != nil {
-		return fmt.Errorf("repo update: %w", err)
+	if err = uc.repo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("repo update: %w", err)
 	}
 
-	return nil
+	if err = uc.sessionUc.RevokeAllUserSessions(ctx, user.Id()); err != nil {
+		return nil, err
+	}
+
+	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id())
+	if err != nil {
+		return nil, fmt.Errorf("create new session: %w", err)
+	}
+
+	userDTO := &dto.UserDTO{
+		ID:    user.Id(),
+		Name:  user.Name(),
+		Email: user.Email(),
+	}
+
+	loginDTO := &dto.LoginDTO{
+		User:   userDTO,
+		Tokens: tokens,
+	}
+
+	return loginDTO, nil
 }
 
-func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) error {
-	u, err := uc.repo.FindById(ctx, userID)
+func (uc *AuthUseCase) UpdateName(ctx context.Context, inputDTO dto.UpdateUserNameDTO) error {
+	u, err := uc.repo.FindById(ctx, inputDTO.UserID)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return domain.ErrUserNotFound
@@ -145,7 +189,7 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) erro
 		return fmt.Errorf("repo find user by id: %w", err)
 	}
 
-	if err = u.ChangeName(name, time.Now()); err != nil {
+	if err = u.ChangeName(inputDTO.Name, time.Now()); err != nil {
 		return err
 	}
 
@@ -154,15 +198,13 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) erro
 	}
 	return nil
 }
-
-func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEmail string) error {
-
-	newEmail = strings.TrimSpace(newEmail)
+func (uc *AuthUseCase) UpdateEmail(ctx context.Context, inputDTO dto.UpdateUserEmailDTO) error {
+	newEmail := strings.TrimSpace(inputDTO.Email)
 	if err := uc.validator.ValidateEmail(newEmail); err != nil {
 		return err
 	}
 
-	u, err := uc.checkPassword(ctx, userID, password)
+	u, err := uc.checkPassword(ctx, inputDTO.UserID, inputDTO.Pass)
 	if err != nil {
 		return err
 	}
@@ -182,7 +224,21 @@ func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEma
 	return nil
 }
 
-// password check
+func (uc *AuthUseCase) Delete(ctx context.Context, inputDTO dto.DeleteUserDTO) error {
+	user, err := uc.checkPassword(ctx, inputDTO.UserID, inputDTO.Pass)
+	if err != nil {
+		return err
+	}
+
+	if err = uc.sessionUc.RevokeAllUserSessions(ctx, user.Id()); err != nil {
+		return err
+	}
+	if err = uc.repo.Delete(ctx, user); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (uc *AuthUseCase) checkPassword(ctx context.Context, userID, password string) (*entity.User, error) {
 	u, err := uc.repo.FindById(ctx, userID)
 	if err != nil {
