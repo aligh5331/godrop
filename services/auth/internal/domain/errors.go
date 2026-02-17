@@ -35,3 +35,11 @@ var (
 	ErrPasswordTooWeak  = &ValidationError{Field: "password", Message: "password too weak"}
 	ErrPasswordNotMatch = &ValidationError{Field: "password", Message: "password not match"}
 )
+
+var (
+	ErrReUsedToken   = errors.New("refresh token is already used")
+	ErrEmptyToken    = errors.New("token is empty")
+	ErrEmptyFamilyID = errors.New("family id is empty")
+	ErrTokenExpired  = errors.New("token is expired")
+	ErrRevokedToken  = errors.New("token is revoked")
+)
