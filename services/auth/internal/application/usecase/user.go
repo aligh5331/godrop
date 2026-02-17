@@ -13,7 +13,7 @@ import (
 
 type AuthUseCase struct {
 	repo          repository.UserRepository
-	hasher        repository.Hasher
+	hasher        repository.PasswordHasher
 	idGen         repository.IdGenerator
 	validator     repository.Validator
 	emailVerifier repository.EmailVerifier
@@ -21,7 +21,7 @@ type AuthUseCase struct {
 
 func NewAuthUseCase(
 	repo repository.UserRepository,
-	hasher repository.Hasher,
+	hasher repository.PasswordHasher,
 	idGen repository.IdGenerator,
 	validator repository.Validator,
 	emailVerifier repository.EmailVerifier,

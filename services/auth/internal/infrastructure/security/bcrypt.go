@@ -14,7 +14,7 @@ type BcryptHasher struct {
 	cost int
 }
 
-func NewHasher(cost int) repository.Hasher {
+func NewHasher(cost int) repository.PasswordHasher {
 	if cost < bcrypt.MinCost || cost > bcrypt.MaxCost {
 		cost = bcrypt.DefaultCost
 	}
