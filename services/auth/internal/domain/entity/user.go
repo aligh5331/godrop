@@ -96,32 +96,32 @@ func (u *User) UpdatedAt() time.Time {
 	return u.updatedAt
 }
 
-func (u *User) ChangePassword(hashedPassword HashedPassword) error {
+func (u *User) ChangePassword(hashedPassword HashedPassword, now time.Time) error {
 	if strings.TrimSpace(string(hashedPassword)) == "" {
 		return domain.ErrEmptyPassword
 	}
 
 	u.password = hashedPassword
-	u.updatedAt = time.Now()
+	u.updatedAt = now.UTC()
 	return nil
 }
 
-func (u *User) ChangeName(newName string) error {
+func (u *User) ChangeName(newName string, now time.Time) error {
 	newName = strings.TrimSpace(newName)
 	if newName == "" {
 		return domain.ErrEmptyName
 	}
 	u.name = newName
-	u.updatedAt = time.Now()
+	u.updatedAt = now.UTC()
 	return nil
 }
 
-func (u *User) ChangeEmail(newEmail string) error {
+func (u *User) ChangeEmail(newEmail string, now time.Time) error {
 	newEmail = strings.TrimSpace(newEmail)
 	if newEmail == "" {
 		return domain.ErrEmptyEmail
 	}
 	u.email = newEmail
-	u.updatedAt = time.Now()
+	u.updatedAt = now.UTC()
 	return nil
 }

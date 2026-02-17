@@ -125,7 +125,7 @@ func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, 
 		return fmt.Errorf("hash password: %w", err)
 	}
 
-	if err = u.ChangePassword(hp); err != nil {
+	if err = u.ChangePassword(hp, time.Now()); err != nil {
 		return err
 	}
 
@@ -145,7 +145,7 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) erro
 		return fmt.Errorf("repo find user by id: %w", err)
 	}
 
-	if err = u.ChangeName(name); err != nil {
+	if err = u.ChangeName(name, time.Now()); err != nil {
 		return err
 	}
 
@@ -171,7 +171,7 @@ func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEma
 		return domain.ErrEmailNotVerified
 	}
 
-	if err = u.ChangeEmail(newEmail); err != nil {
+	if err = u.ChangeEmail(newEmail, time.Now()); err != nil {
 		return err
 	}
 
