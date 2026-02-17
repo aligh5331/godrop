@@ -5,6 +5,7 @@ import (
 	ar "auth/internal/application/repository"
 	"auth/internal/domain"
 	"auth/internal/domain/entity"
+	"auth/internal/domain/helpers"
 	dr "auth/internal/domain/repository"
 	"context"
 	"errors"
@@ -16,19 +17,19 @@ import (
 type AuthUseCase struct {
 	sessionUc     ar.SessionUseCase
 	repo          dr.UserRepository
-	hasher        dr.PasswordHasher
-	idGen         dr.IdGenerator
-	validator     dr.Validator
-	emailVerifier dr.EmailVerifier
+	hasher        helpers.PasswordHasher
+	idGen         helpers.IdGenerator
+	validator     helpers.Validator
+	emailVerifier helpers.EmailVerifier
 }
 
 func NewAuthUseCase(
 	sessionUc ar.SessionUseCase,
 	repo dr.UserRepository,
-	hasher dr.PasswordHasher,
-	idGen dr.IdGenerator,
-	validator dr.Validator,
-	emailVerifier dr.EmailVerifier,
+	hasher helpers.PasswordHasher,
+	idGen helpers.IdGenerator,
+	validator helpers.Validator,
+	emailVerifier helpers.EmailVerifier,
 ) ar.AuthUseCase {
 	return &AuthUseCase{
 		sessionUc:     sessionUc,

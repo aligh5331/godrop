@@ -1,4 +1,4 @@
-package repository
+package helpers
 
 import "auth/internal/domain/entity"
 

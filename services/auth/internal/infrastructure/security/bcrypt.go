@@ -3,7 +3,7 @@ package security
 import (
 	"auth/internal/domain"
 	"auth/internal/domain/entity"
-	"auth/internal/domain/repository"
+	"auth/internal/domain/helpers"
 	"errors"
 	"fmt"
 
@@ -14,7 +14,7 @@ type BcryptHasher struct {
 	cost int
 }
 
-func NewHasher(cost int) repository.PasswordHasher {
+func NewHasher(cost int) helpers.PasswordHasher {
 	if cost < bcrypt.MinCost || cost > bcrypt.MaxCost {
 		cost = bcrypt.DefaultCost
 	}

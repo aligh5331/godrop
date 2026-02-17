@@ -1,4 +1,4 @@
-package repository
+package helpers
 
 type Validator interface {
 	ValidatePassword(password string) error
