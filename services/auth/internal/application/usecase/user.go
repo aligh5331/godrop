@@ -69,19 +69,19 @@ func (uc *AuthUseCase) Register(ctx context.Context, email, name, password strin
 		return domain.ErrEmailNotVerified
 	}
 
-	hp, hErr := uc.hasher.Hash(password)
-	if hErr != nil {
-		return fmt.Errorf("hash password: %w", hErr)
+	hp, err := uc.hasher.Hash(password)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
 	}
 
 	newId := uc.idGen.NewId()
 	now := time.Now()
-	du, dErr := entity.NewUser(newId, name, email, hp, now, now)
-	if dErr != nil {
-		return dErr
+	du, err := entity.NewUser(newId, name, email, hp, now, now)
+	if err != nil {
+		return err
 	}
 
-	if err := uc.repo.Create(ctx, du); err != nil {
+	if err = uc.repo.Create(ctx, du); err != nil {
 		return fmt.Errorf("repo create : %w", err)
 	}
 	return nil
@@ -110,26 +110,26 @@ func (uc *AuthUseCase) Login(ctx context.Context, email, password string) (*enti
 func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, newPassword string) error {
 
 	//password check
-	u, uErr := uc.checkPassword(ctx, userID, oldPassword)
-	if uErr != nil {
-		return uErr
+	u, err := uc.checkPassword(ctx, userID, oldPassword)
+	if err != nil {
+		return err
 	}
 
 	//changing password
-	if err := uc.validator.ValidatePassword(newPassword); err != nil {
+	if err = uc.validator.ValidatePassword(newPassword); err != nil {
 		return err
 	}
 
-	hp, hErr := uc.hasher.Hash(newPassword)
-	if hErr != nil {
-		return fmt.Errorf("hash password: %w", hErr)
+	hp, err := uc.hasher.Hash(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash password: %w", err)
 	}
 
-	if err := u.ChangePassword(hp); err != nil {
+	if err = u.ChangePassword(hp); err != nil {
 		return err
 	}
 
-	if err := uc.repo.Update(ctx, u); err != nil {
+	if err = uc.repo.Update(ctx, u); err != nil {
 		return fmt.Errorf("repo update: %w", err)
 	}
 
@@ -137,19 +137,19 @@ func (uc *AuthUseCase) ChangePassword(ctx context.Context, userID, oldPassword, 
 }
 
 func (uc *AuthUseCase) UpdateName(ctx context.Context, name, userID string) error {
-	u, uErr := uc.repo.FindById(ctx, userID)
-	if uErr != nil {
-		if errors.Is(uErr, domain.ErrUserNotFound) {
+	u, err := uc.repo.FindById(ctx, userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			return domain.ErrUserNotFound
 		}
-		return fmt.Errorf("repo find user by id: %w", uErr)
+		return fmt.Errorf("repo find user by id: %w", err)
 	}
 
-	if err := u.ChangeName(name); err != nil {
+	if err = u.ChangeName(name); err != nil {
 		return err
 	}
 
-	if err := uc.repo.Update(ctx, u); err != nil {
+	if err = uc.repo.Update(ctx, u); err != nil {
 		return fmt.Errorf("repo update: %w", err)
 	}
 	return nil
@@ -162,20 +162,20 @@ func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEma
 		return err
 	}
 
-	u, uErr := uc.checkPassword(ctx, userID, password)
-	if uErr != nil {
-		return uErr
+	u, err := uc.checkPassword(ctx, userID, password)
+	if err != nil {
+		return err
 	}
 
 	if !uc.emailVerifier.IsEmailVerified(ctx, newEmail) {
 		return domain.ErrEmailNotVerified
 	}
 
-	if err := u.ChangeEmail(newEmail); err != nil {
+	if err = u.ChangeEmail(newEmail); err != nil {
 		return err
 	}
 
-	if err := uc.repo.Update(ctx, u); err != nil {
+	if err = uc.repo.Update(ctx, u); err != nil {
 		return fmt.Errorf("repo update: %w", err)
 	}
 
@@ -184,12 +184,12 @@ func (uc *AuthUseCase) UpdateEmail(ctx context.Context, userID, password, newEma
 
 // password check
 func (uc *AuthUseCase) checkPassword(ctx context.Context, userID, password string) (*entity.User, error) {
-	u, uErr := uc.repo.FindById(ctx, userID)
-	if uErr != nil {
-		if errors.Is(uErr, domain.ErrUserNotFound) {
+	u, err := uc.repo.FindById(ctx, userID)
+	if err != nil {
+		if errors.Is(err, domain.ErrUserNotFound) {
 			return nil, domain.ErrInvalidCredentials
 		}
-		return nil, fmt.Errorf("repo find user by id: %w", uErr)
+		return nil, fmt.Errorf("repo find user by id: %w", err)
 	}
 
 	if !uc.hasher.CheckPasswordHash(password, u.Password()) {
