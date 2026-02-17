@@ -40,7 +40,7 @@ func NewAuthUseCase(
 	}
 }
 
-func (uc *AuthUseCase) Login(ctx context.Context, inputDTO dto.LoginInputDTO) (*dto.LoginDTO, error) {
+func (uc *AuthUseCase) Login(ctx context.Context, inputDTO dto.LoginInputDTO, metadataDTO dto.SessionMetadataDTO) (*dto.LoginDTO, error) {
 	if err := uc.validator.ValidateEmail(inputDTO.Email); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, inputDTO dto.LoginInputDTO) (*
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id())
+	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id(), metadataDTO)
 	if err != nil {
 		return nil, fmt.Errorf("create new session: %w", err)
 	}
@@ -76,7 +76,7 @@ func (uc *AuthUseCase) Login(ctx context.Context, inputDTO dto.LoginInputDTO) (*
 	return loginDTO, nil
 }
 
-func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputDTO) (*dto.RegisterDTO, error) {
+func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputDTO, metadataDTO dto.SessionMetadataDTO) (*dto.RegisterDTO, error) {
 	if err := uc.validator.ValidatePassword(inputDTO.Password); err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputD
 		return nil, fmt.Errorf("repo create : %w", err)
 	}
 
-	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id())
+	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id(), metadataDTO)
 	if err != nil {
 		return nil, fmt.Errorf("create new session: %w", err)
 	}
@@ -132,7 +132,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputD
 	return registerDTO, nil
 }
 
-func (uc *AuthUseCase) ChangePassword(ctx context.Context, inputDTO dto.ChangePasswordDTO) (*dto.LoginDTO, error) {
+func (uc *AuthUseCase) ChangePassword(ctx context.Context, inputDTO dto.ChangePasswordDTO, metadataDTO dto.SessionMetadataDTO) (*dto.LoginDTO, error) {
 	//password check
 	user, err := uc.checkPassword(ctx, inputDTO.UserID, inputDTO.OldPass)
 	if err != nil {
@@ -161,7 +161,7 @@ func (uc *AuthUseCase) ChangePassword(ctx context.Context, inputDTO dto.ChangePa
 		return nil, err
 	}
 
-	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id())
+	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id(), metadataDTO)
 	if err != nil {
 		return nil, fmt.Errorf("create new session: %w", err)
 	}
@@ -198,6 +198,7 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, inputDTO dto.UpdateUserNa
 	}
 	return nil
 }
+
 func (uc *AuthUseCase) UpdateEmail(ctx context.Context, inputDTO dto.UpdateUserEmailDTO) error {
 	newEmail := strings.TrimSpace(inputDTO.Email)
 	if err := uc.validator.ValidateEmail(newEmail); err != nil {
