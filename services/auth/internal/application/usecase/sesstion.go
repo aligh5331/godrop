@@ -208,8 +208,38 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 }
 
 func (uc *SessionUseCase) RevokeSession(ctx context.Context, sessionID string) error {
-	//TODO implement me
-	panic("implement me")
+	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() // no-op if already committed
+
+	// DB Hits
+	session, err := txRepo.GetSessionByID(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+	refreshToken, err := txRepo.GetRefreshTokenBySessionID(ctx, sessionID)
+	if err != nil {
+		return err
+	}
+
+	if err = txRepo.RevokeRefreshToken(ctx, refreshToken.ID()); err != nil {
+		return err
+	}
+	if err = txRepo.DeleteSession(ctx, sessionID); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	// removing the cache
+	_ = uc.cache.Delete(ctx, "at:"+string(session.Token()))
+	_ = uc.cache.Delete(ctx, "rt:"+string(refreshToken.HashedToken()))
+
+	return nil
 }
 
 func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID string) error {
