@@ -80,10 +80,12 @@ func (uc *SessionUseCase) CreateNewSession(
 		return nil, err
 	}
 
+	val := refreshTokenE.Serialize()
 	if err = uc.cache.Set(ctx, "at:"+string(hSessionToken), metadataDTO, uc.sDuration); err != nil {
 		return nil, err
 	}
-	if err = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), ID, uc.rtDuration); err != nil {
+	if err = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), string(val), uc.rtDuration); err != nil {
+		return nil, err
 	}
 
 	return &dto.TokenPairDTO{
