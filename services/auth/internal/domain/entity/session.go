@@ -8,7 +8,6 @@ import (
 
 type Session struct {
 	id           string
-	familyID     string
 	token        HashedToken
 	userID       string
 	userAgent    string
@@ -21,7 +20,6 @@ type Session struct {
 
 func NewSession(
 	id,
-	familyID,
 	userAgent,
 	ip,
 	userID string,
@@ -30,14 +28,10 @@ func NewSession(
 	expDuration time.Duration,
 ) (*Session, error) {
 	id = strings.TrimSpace(id)
-	familyID = strings.TrimSpace(familyID)
 	userID = strings.TrimSpace(userID)
 
 	if id == "" {
 		return nil, domain.ErrEmptyId
-	}
-	if familyID == "" {
-		return nil, domain.ErrEmptyFamilyID
 	}
 	if userID == "" {
 		return nil, domain.ErrEmptyUserId
@@ -48,7 +42,6 @@ func NewSession(
 
 	return &Session{
 		id:        id,
-		familyID:  familyID,
 		token:     hashedToken,
 		userAgent: userAgent,
 		ip:        ip,
@@ -68,4 +61,8 @@ func (s *Session) Revoke() {
 
 func (s *Session) Use(now time.Time) {
 	s.lastActiveAt = now.UTC()
+}
+
+func (s *Session) ID() string {
+	return s.id
 }

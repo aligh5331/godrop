@@ -37,10 +37,10 @@ var (
 )
 
 var (
-	ErrReUsedToken   = errors.New("refresh token is already used")
-	ErrEmptyToken    = errors.New("token is empty")
-	ErrEmptyFamilyID = errors.New("family id is empty")
-	ErrTokenExpired  = errors.New("token is expired")
-	ErrRevokedToken  = errors.New("token is revoked")
-	ErrEmptyUserId   = errors.New("user id is empty")
+	ErrReUsedToken    = errors.New("refresh token is already used")
+	ErrEmptyToken     = errors.New("token is empty")
+	ErrEmptySessionID = errors.New("family id is empty")
+	ErrTokenExpired   = errors.New("token is expired")
+	ErrRevokedToken   = errors.New("token is revoked")
+	ErrEmptyUserId    = errors.New("user id is empty")
 )

@@ -57,10 +57,8 @@ func (uc *SessionUseCase) CreateNewSession(
 		return nil, err
 	}
 
-	familyID := uc.idGen.NewId()
-
 	sessionE, err := entity.NewSession(
-		ID, familyID,
+		ID,
 		metadataDTO.ClientAgent,
 		metadataDTO.IP,
 		userID,
@@ -70,7 +68,7 @@ func (uc *SessionUseCase) CreateNewSession(
 	if err != nil {
 		return nil, err
 	}
-	refreshTokenE, err := entity.NewRefreshToken(ID, familyID, hRefreshToken, now, uc.rtDuration)
+	refreshTokenE, err := entity.NewRefreshToken(ID, ID, hRefreshToken, now, uc.rtDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +83,7 @@ func (uc *SessionUseCase) CreateNewSession(
 	if err = uc.cache.Set(ctx, "at:"+string(hSessionToken), metadataDTO, uc.sDuration); err != nil {
 		return nil, err
 	}
-	if err = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), familyID, uc.rtDuration); err != nil {
+	if err = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), ID, uc.rtDuration); err != nil {
 	}
 
 	return &dto.TokenPairDTO{

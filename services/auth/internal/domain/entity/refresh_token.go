@@ -8,21 +8,21 @@ import (
 type HashedToken string
 type RefreshToken struct {
 	id          string
-	familyID    string
+	sessionID   string
 	hashedToken HashedToken
 	isRevoked   bool
 	createdAt   time.Time
 	expiresAt   time.Time
 }
 
-func NewRefreshToken(id, familyID string, hashedToken HashedToken, createdAt time.Time, expDuration time.Duration) (*RefreshToken, error) {
+func NewRefreshToken(id, sessionID string, hashedToken HashedToken, createdAt time.Time, expDuration time.Duration) (*RefreshToken, error) {
 
 	if id == "" {
 		return nil, domain.ErrEmptyId
 	}
 
-	if familyID == "" {
-		return nil, domain.ErrEmptyFamilyID
+	if sessionID == "" {
+		return nil, domain.ErrEmptySessionID
 	}
 
 	if hashedToken == "" {
@@ -32,7 +32,7 @@ func NewRefreshToken(id, familyID string, hashedToken HashedToken, createdAt tim
 	return &RefreshToken{
 		id:          id,
 		hashedToken: hashedToken,
-		familyID:    familyID,
+		sessionID:   sessionID,
 		createdAt:   createdAt.UTC(),
 		expiresAt:   createdAt.Add(expDuration).UTC(),
 	}, nil
@@ -57,7 +57,7 @@ func (rt *RefreshToken) Rotate(id string, hashedToken HashedToken, now, expiresA
 	return &RefreshToken{
 		id:          id,
 		hashedToken: hashedToken,
-		familyID:    rt.familyID,
+		sessionID:   rt.sessionID,
 		createdAt:   now.UTC(),
 		expiresAt:   expiresAt.UTC(),
 	}, nil
@@ -87,8 +87,8 @@ func (rt *RefreshToken) IsRevoked() bool {
 func (rt *RefreshToken) ID() string {
 	return rt.id
 }
-func (rt *RefreshToken) FamilyID() string {
-	return rt.familyID
+func (rt *RefreshToken) SessionID() string {
+	return rt.sessionID
 }
 func (rt *RefreshToken) HashedToken() HashedToken {
 	return rt.hashedToken
