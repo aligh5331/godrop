@@ -1,10 +1,15 @@
 package entity
 
-import "time"
+import (
+	"auth/internal/domain"
+	"strings"
+	"time"
+)
 
 type Session struct {
 	id           string
-	token        string
+	familyID     string
+	token        HashedToken
 	userID       string
 	userAgent    string
 	ip           string
@@ -14,16 +19,43 @@ type Session struct {
 	lastActiveAt time.Time
 }
 
-func (s *Session) NewSession(
+func NewSession(
 	id,
-	token,
+	familyID,
 	userAgent,
-	ip string,
-	userID *User,
+	ip,
+	userID string,
+	hashedToken HashedToken,
 	now time.Time,
 	expDuration time.Duration,
-) {
+) (*Session, error) {
+	id = strings.TrimSpace(id)
+	familyID = strings.TrimSpace(familyID)
+	userID = strings.TrimSpace(userID)
 
+	if id == "" {
+		return nil, domain.ErrEmptyId
+	}
+	if familyID == "" {
+		return nil, domain.ErrEmptyFamilyID
+	}
+	if userID == "" {
+		return nil, domain.ErrEmptyUserId
+	}
+	if hashedToken == "" {
+		return nil, domain.ErrEmptyToken
+	}
+
+	return &Session{
+		id:        id,
+		familyID:  familyID,
+		token:     hashedToken,
+		userAgent: userAgent,
+		ip:        ip,
+		userID:    userID,
+		createdAt: now.UTC(),
+		expiresAt: now.Add(expDuration).UTC(),
+	}, nil
 }
 
 func (s *Session) IsValid() bool {

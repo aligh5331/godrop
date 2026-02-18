@@ -42,4 +42,5 @@ var (
 	ErrEmptyFamilyID = errors.New("family id is empty")
 	ErrTokenExpired  = errors.New("token is expired")
 	ErrRevokedToken  = errors.New("token is revoked")
+	ErrEmptyUserId   = errors.New("user id is empty")
 )
