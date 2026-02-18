@@ -75,20 +75,26 @@ func (uc *SessionUseCase) CreateNewSession(
 		return nil, err
 	}
 
-	if err = uc.repo.CreateSession(ctx, sessionE); err != nil {
+	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
 		return nil, err
 	}
-	if err = uc.repo.CreateRefreshToken(ctx, refreshTokenE); err != nil {
+	defer tx.Rollback() // no-op if already committed
+
+	if err = txRepo.CreateSession(ctx, sessionE); err != nil {
+		return nil, err
+	}
+	if err = txRepo.CreateRefreshToken(ctx, refreshTokenE); err != nil {
+		return nil, err
+	}
+
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	val := refreshTokenE.Serialize()
-	if err = uc.cache.Set(ctx, "at:"+string(hSessionToken), metadataDTO, uc.sDuration); err != nil {
-		return nil, err
-	}
-	if err = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), string(val), uc.rtDuration); err != nil {
-		return nil, err
-	}
+	_ = uc.cache.Set(ctx, "at:"+string(hSessionToken), metadataDTO, uc.sDuration)
+	_ = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), string(val), uc.rtDuration)
 
 	return &dto.TokenPairDTO{
 		RefreshToken: refreshToken,
@@ -165,34 +171,35 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 		return nil, err
 	}
 	//remove cache
-	if err = uc.cache.Delete(ctx, "at:"+string(session.Token())); err != nil {
-		return nil, err
-	}
-	if err = uc.cache.Delete(ctx, "rt:"+string(hRefreshToken)); err != nil {
-		return nil, err
-	}
+	_ = uc.cache.Delete(ctx, "at:"+string(session.Token()))
+	_ = uc.cache.Delete(ctx, "rt:"+string(hRefreshToken))
 
 	//update repo
+	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() // no-op if already committed
+
 	session.SetToken(newHAccessT, now, uc.sDuration)
 
-	if err = uc.repo.UpdateSession(ctx, session); err != nil {
+	if err = txRepo.UpdateSession(ctx, session); err != nil {
 		return nil, err
 	}
-	if err = uc.repo.RevokeRefreshToken(ctx, refreshTokenE.ID()); err != nil {
+	if err = txRepo.RevokeRefreshToken(ctx, refreshTokenE.ID()); err != nil {
 		return nil, err
 	}
 
-	if err = uc.repo.CreateRefreshToken(ctx, newRefreshTE); err != nil {
+	if err = txRepo.CreateRefreshToken(ctx, newRefreshTE); err != nil {
+		return nil, err
+	}
+	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
 
 	val := newRefreshTE.Serialize()
-	if err = uc.cache.Set(ctx, "at:"+string(newHAccessT), metadataDTO, uc.sDuration); err != nil {
-		return nil, err
-	}
-	if err = uc.cache.Set(ctx, "rt:"+string(newHRefreshT), string(val), uc.rtDuration); err != nil {
-		return nil, err
-	}
+	_ = uc.cache.Set(ctx, "at:"+string(newHAccessT), metadataDTO, uc.sDuration)
+	_ = uc.cache.Set(ctx, "rt:"+string(newHRefreshT), string(val), uc.rtDuration)
 
 	return &dto.TokenPairDTO{
 		RefreshToken: newRefreshT,
