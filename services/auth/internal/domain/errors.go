@@ -44,3 +44,7 @@ var (
 	ErrRevokedToken   = errors.New("token is revoked")
 	ErrEmptyUserId    = errors.New("user id is empty")
 )
+
+var (
+	ErrMissCache = errors.New("miss cache")
+)

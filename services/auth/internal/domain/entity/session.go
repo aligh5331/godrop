@@ -66,3 +66,22 @@ func (s *Session) Use(now time.Time) {
 func (s *Session) ID() string {
 	return s.id
 }
+
+func (s *Session) Token() HashedToken {
+	return s.token
+}
+func (s *Session) SetToken(token HashedToken, now time.Time, duration time.Duration) {
+	s.token = token
+	s.expiresAt = now.Add(duration)
+}
+
+func (s *Session) UserID() string {
+	return s.userID
+}
+
+func (s *Session) IP() string {
+	return s.ip
+}
+func (s *Session) UserAgent() string {
+	return s.userAgent
+}

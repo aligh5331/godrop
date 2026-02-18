@@ -2,10 +2,12 @@ package usecase
 
 import (
 	"auth/internal/application/dto"
+	"auth/internal/domain"
 	"auth/internal/domain/entity"
 	"auth/internal/domain/helpers"
 	"auth/internal/domain/repository"
 	"context"
+	"errors"
 	"time"
 )
 
@@ -95,8 +97,107 @@ func (uc *SessionUseCase) CreateNewSession(
 }
 
 func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken string) (*dto.TokenPairDTO, error) {
-	//TODO implement me
-	panic("implement me")
+
+	hRefreshToken, err := uc.hasher.Hash(refreshToken)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	var refreshTokenE *entity.RefreshToken
+	//cache check
+	cachedData, err := uc.cache.Get(ctx, "rt:"+string(hRefreshToken))
+
+	if err == nil && cachedData != "" {
+		refreshTokenE = entity.Unserialize(entity.SerializeRefreshTokenE(cachedData))
+	}
+
+	if refreshTokenE == nil {
+		refreshTokenE, err = uc.repo.GetRefreshTokenEntityByRefreshToken(ctx, hRefreshToken)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	//rt validation
+	if err = refreshTokenE.EnsureValid(now); err != nil {
+		if errors.Is(err, domain.ErrReUsedToken) {
+			_ = uc.RevokeSession(ctx, refreshTokenE.SessionID())
+			return nil, err
+		}
+		return nil, err
+	}
+
+	//generating new tokens
+	session, err := uc.repo.GetSessionByID(ctx, refreshTokenE.SessionID())
+	if err != nil {
+		return nil, err
+	}
+
+	metadataDTO := dto.SessionMetadataDTO{IP: session.IP(), ClientAgent: session.UserAgent()}
+	newAccessT, err := uc.tokenGen.GenerateAccessToken(
+		session.UserID(),
+		metadataDTO,
+		uc.sDuration,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	newHAccessT, err := uc.hasher.Hash(newAccessT)
+	if err != nil {
+		return nil, err
+	}
+
+	newRefreshT, err := uc.tokenGen.GenerateRefreshToken(session.UserID(), session.ID(), uc.rtDuration)
+	if err != nil {
+		return nil, err
+	}
+
+	newHRefreshT, err := uc.hasher.Hash(newRefreshT)
+	if err != nil {
+		return nil, err
+	}
+
+	ID := uc.idGen.NewId()
+	newRefreshTE, err := entity.NewRefreshToken(ID, session.ID(), newHRefreshT, now, uc.rtDuration)
+	if err != nil {
+		return nil, err
+	}
+	//remove cache
+	if err = uc.cache.Delete(ctx, "at:"+string(session.Token())); err != nil {
+		return nil, err
+	}
+	if err = uc.cache.Delete(ctx, "rt:"+string(hRefreshToken)); err != nil {
+		return nil, err
+	}
+
+	//update repo
+	session.SetToken(newHAccessT, now, uc.sDuration)
+
+	if err = uc.repo.UpdateSession(ctx, session); err != nil {
+		return nil, err
+	}
+	if err = uc.repo.RevokeRefreshToken(ctx, refreshTokenE.ID()); err != nil {
+		return nil, err
+	}
+
+	if err = uc.repo.CreateRefreshToken(ctx, newRefreshTE); err != nil {
+		return nil, err
+	}
+
+	val := newRefreshTE.Serialize()
+	if err = uc.cache.Set(ctx, "at:"+string(newHAccessT), metadataDTO, uc.sDuration); err != nil {
+		return nil, err
+	}
+	if err = uc.cache.Set(ctx, "rt:"+string(newHRefreshT), string(val), uc.rtDuration); err != nil {
+		return nil, err
+	}
+
+	return &dto.TokenPairDTO{
+		RefreshToken: newRefreshT,
+		AccessToken:  newAccessT,
+	}, nil
 }
 
 func (uc *SessionUseCase) RevokeSession(ctx context.Context, sessionID string) error {
