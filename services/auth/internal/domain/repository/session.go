@@ -12,6 +12,7 @@ type SessionRepository interface {
 
 	// Retrieval
 	GetSessionByID(ctx context.Context, id string) (*entity.Session, error)
+	GetSessionByAccessToken(ctx context.Context, token entity.HashedToken) (*entity.Session, error)
 
 	GetRefreshTokenEntityByRefreshToken(ctx context.Context, token entity.HashedToken) (*entity.RefreshToken, error)
 

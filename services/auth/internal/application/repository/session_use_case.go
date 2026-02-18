@@ -10,5 +10,6 @@ type SessionUseCase interface {
 	RefreshSession(ctx context.Context, refreshToken string) (*dto.TokenPairDTO, error)
 	RevokeSession(ctx context.Context, sessionID string) error
 	RevokeAllUserSessions(ctx context.Context, userID string) error
+	EnsureAccessTokenValid(ctx context.Context, AccessT string) error
 	GetUserSessions(ctx context.Context, userID string) ([]*dto.SessionDTO, error)
 }

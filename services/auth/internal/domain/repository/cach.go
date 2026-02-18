@@ -11,6 +11,7 @@ type CacheRepository interface {
 
 	// Get & Exist
 	Get(ctx context.Context, key string) (string, error)
+	Exists(ctx context.Context, key string) (bool, error)
 
 	// Removal
 	Delete(ctx context.Context, key string) error

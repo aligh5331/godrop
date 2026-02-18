@@ -51,8 +51,8 @@ func NewSession(
 	}, nil
 }
 
-func (s *Session) IsValid() bool {
-	return !s.isRevoked && time.Now().Before(s.expiresAt)
+func (s *Session) IsValid(now time.Time) bool {
+	return !s.isRevoked && now.Before(s.expiresAt)
 }
 
 func (s *Session) Revoke() {

@@ -43,6 +43,7 @@ var (
 	ErrTokenExpired   = errors.New("token is expired")
 	ErrRevokedToken   = errors.New("token is revoked")
 	ErrEmptyUserId    = errors.New("user id is empty")
+	ErrInvalidSession = errors.New("invalid access token")
 )
 
 var (

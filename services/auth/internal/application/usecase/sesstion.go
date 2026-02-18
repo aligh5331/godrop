@@ -214,3 +214,27 @@ func (uc *SessionUseCase) GetUserSessions(ctx context.Context, userID string) ([
 	//TODO implement me
 	panic("implement me")
 }
+
+func (uc *SessionUseCase) EnsureAccessTokenValid(ctx context.Context, AccessT string) error {
+
+	hAccessT, err := uc.hasher.Hash(AccessT)
+	if err != nil {
+		return err
+	}
+	if ok, _ := uc.cache.Exists(ctx, "at:"+string(hAccessT)); ok {
+		return nil
+	}
+
+	session, err := uc.repo.GetSessionByAccessToken(ctx, hAccessT)
+	if err != nil {
+		return err
+	}
+
+	now := time.Now()
+	if !session.IsValid(now) {
+		return domain.ErrInvalidSession
+	}
+	session.Use(now)
+	_ = uc.repo.UpdateSession(ctx, session)
+	return nil
+}
