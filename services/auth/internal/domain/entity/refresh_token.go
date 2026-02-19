@@ -16,6 +16,7 @@ type RefreshToken struct {
 	isRevoked   bool
 	createdAt   time.Time
 	expiresAt   time.Time
+	revokedAt   time.Time
 }
 
 func NewRefreshToken(id, sessionID string, hashedToken HashedToken, createdAt time.Time, expDuration time.Duration) (*RefreshToken, error) {
@@ -38,8 +39,8 @@ func NewRefreshToken(id, sessionID string, hashedToken HashedToken, createdAt ti
 		id:          id,
 		hashedToken: hashedToken,
 		sessionID:   sessionID,
-		createdAt:   createdAt.UTC(),
-		expiresAt:   createdAt.Add(expDuration).UTC(),
+		createdAt:   createdAt,
+		expiresAt:   createdAt.Add(expDuration),
 	}, nil
 }
 
@@ -57,14 +58,14 @@ func (rt *RefreshToken) Rotate(id string, hashedToken HashedToken, now, expiresA
 		return nil, domain.ErrEmptyToken
 	}
 
-	rt.Revoke()
+	rt.Revoke(now)
 
 	return &RefreshToken{
 		id:          id,
 		hashedToken: hashedToken,
 		sessionID:   rt.sessionID,
-		createdAt:   now.UTC(),
-		expiresAt:   expiresAt.UTC(),
+		createdAt:   now,
+		expiresAt:   expiresAt,
 	}, nil
 }
 
@@ -75,14 +76,15 @@ func (rt *RefreshToken) EnsureValid(now time.Time) error {
 	}
 
 	if now.After(rt.expiresAt) {
-		rt.Revoke()
+		rt.Revoke(now)
 		return domain.ErrTokenExpired
 	}
 
 	return nil
 }
 
-func (rt *RefreshToken) Revoke() {
+func (rt *RefreshToken) Revoke(now time.Time) {
+	rt.revokedAt = now
 	rt.isRevoked = true
 }
 
@@ -101,6 +103,9 @@ func (rt *RefreshToken) HashedToken() HashedToken {
 func (rt *RefreshToken) CreatedAt() time.Time {
 	return rt.createdAt
 }
+func (rt *RefreshToken) RevokedAt() time.Time {
+	return rt.revokedAt
+}
 func (rt *RefreshToken) ExpiresAt() time.Time {
 	return rt.expiresAt
 }
@@ -114,20 +119,21 @@ func (rt *RefreshToken) Serialize() SerializeRefreshTokenE {
 		isRevoked = "1"
 	}
 
-	return SerializeRefreshTokenE(fmt.Sprintf("%s|%s|%s|%s|%d|%d",
+	return SerializeRefreshTokenE(fmt.Sprintf("%s|%s|%s|%s|%d|%d|%d",
 		rt.ID(),
 		rt.SessionID(),
 		rt.HashedToken(),
 		isRevoked,
 		rt.CreatedAt().Unix(),
 		rt.ExpiresAt().Unix(),
+		rt.RevokedAt().Unix(),
 	),
 	)
 }
 func Unserialize(s SerializeRefreshTokenE) *RefreshToken {
 	val := string(s)
 	parts := strings.Split(val, "|")
-	if len(parts) < 6 {
+	if len(parts) < 7 {
 		return nil
 	}
 
@@ -140,6 +146,7 @@ func Unserialize(s SerializeRefreshTokenE) *RefreshToken {
 	if err != nil {
 		return nil
 	}
+	revokedUnix, err := strconv.ParseInt(parts[6], 10, 64)
 
 	// Parse boolean
 	isRevoked := parts[3] == "1"
@@ -149,7 +156,8 @@ func Unserialize(s SerializeRefreshTokenE) *RefreshToken {
 		sessionID:   parts[1],
 		hashedToken: HashedToken(parts[2]),
 		isRevoked:   isRevoked,
-		createdAt:   time.Unix(createdUnix, 0).UTC(),
-		expiresAt:   time.Unix(expiresUnix, 0).UTC(),
+		createdAt:   time.Unix(createdUnix, 0),
+		expiresAt:   time.Unix(expiresUnix, 0),
+		revokedAt:   time.Unix(revokedUnix, 0),
 	}
 }
