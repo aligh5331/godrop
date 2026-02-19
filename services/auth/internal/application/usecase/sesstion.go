@@ -314,7 +314,5 @@ func (uc *SessionUseCase) EnsureAccessTokenValid(ctx context.Context, AccessT st
 	if !session.IsValid(now) {
 		return domain.ErrInvalidSession
 	}
-	session.Use(now)
-	_ = uc.repo.UpdateSession(ctx, session)
 	return nil
 }

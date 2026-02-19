@@ -7,15 +7,14 @@ import (
 )
 
 type Session struct {
-	id           string
-	token        HashedToken
-	userID       string
-	userAgent    string
-	ip           string
-	isRevoked    bool
-	createdAt    time.Time
-	expiresAt    time.Time
-	lastActiveAt time.Time
+	id        string
+	token     HashedToken
+	userID    string
+	userAgent string
+	ip        string
+	isRevoked bool
+	createdAt time.Time
+	expiresAt time.Time
 }
 
 func NewSession(
@@ -57,10 +56,6 @@ func (s *Session) IsValid(now time.Time) bool {
 
 func (s *Session) Revoke() {
 	s.isRevoked = true
-}
-
-func (s *Session) Use(now time.Time) {
-	s.lastActiveAt = now.UTC()
 }
 
 func (s *Session) ID() string {
