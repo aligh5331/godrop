@@ -16,15 +16,15 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
-type Transaction struct {
+type URTransaction struct {
 	tx *gorm.DB
 }
 
-func (t *Transaction) Commit() error {
+func (t *URTransaction) Commit() error {
 	return t.tx.Commit().Error
 }
 
-func (t *Transaction) Rollback() error {
+func (t *URTransaction) Rollback() error {
 	return t.tx.Rollback().Error
 }
 
@@ -35,7 +35,7 @@ func (u *UserRepository) BeginTx(ctx context.Context) (repository.UserRepository
 	}
 
 	txRepo := &UserRepository{db: tx} // same repo, but backed by the tx
-	return txRepo, &Transaction{tx: tx}, nil
+	return txRepo, &URTransaction{tx: tx}, nil
 }
 
 func (u *UserRepository) Create(ctx context.Context, user *entity.User) error {
