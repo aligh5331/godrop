@@ -171,9 +171,6 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 	if err != nil {
 		return nil, err
 	}
-	//remove cache
-	_ = uc.cache.Delete(ctx, "at:"+string(session.Token()))
-	_ = uc.cache.Delete(ctx, "rt:"+string(hRefreshToken))
 
 	//update repo
 	txRepo, tx, err := uc.repo.BeginTx(ctx)
@@ -198,6 +195,9 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 		return nil, err
 	}
 
+	//remove cache
+	_ = uc.cache.Delete(ctx, "at:"+string(session.Token()))
+	_ = uc.cache.Delete(ctx, "rt:"+string(hRefreshToken))
 	val := newRefreshTE.Serialize()
 	_ = uc.cache.Set(ctx, "at:"+string(newHAccessT), metadataDTO, uc.sDuration)
 	_ = uc.cache.Set(ctx, "rt:"+string(newHRefreshT), string(val), uc.rtDuration)
