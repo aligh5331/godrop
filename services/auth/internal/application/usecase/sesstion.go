@@ -33,7 +33,7 @@ func (uc *SessionUseCase) CreateNewSession(
 
 	now := time.Now()
 
-	ID := uc.idGen.NewId()
+	sID := uc.idGen.NewId()
 
 	//generate session token
 	sessionToken, err := uc.tokenGen.GenerateAccessToken(userID, metadataDTO, uc.sDuration)
@@ -48,7 +48,7 @@ func (uc *SessionUseCase) CreateNewSession(
 	}
 
 	//generate refresh token
-	refreshToken, err := uc.tokenGen.GenerateRefreshToken(userID, ID, uc.rtDuration)
+	refreshToken, err := uc.tokenGen.GenerateRefreshToken(userID, sID, uc.rtDuration)
 	if err != nil {
 		return nil, err
 	}
@@ -60,17 +60,18 @@ func (uc *SessionUseCase) CreateNewSession(
 	}
 
 	sessionE, err := entity.NewSession(
-		ID,
+		sID,
 		metadataDTO.ClientAgent,
 		metadataDTO.IP,
 		userID,
 		hSessionToken,
 		now, uc.sDuration,
 	)
+	rtID := uc.idGen.NewId()
 	if err != nil {
 		return nil, err
 	}
-	refreshTokenE, err := entity.NewRefreshToken(ID, ID, hRefreshToken, now, uc.rtDuration)
+	refreshTokenE, err := entity.NewRefreshToken(rtID, sID, hRefreshToken, now, uc.rtDuration)
 	if err != nil {
 		return nil, err
 	}
