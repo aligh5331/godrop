@@ -24,8 +24,8 @@ func NewUser(id, name, email string, password HashedPassword, createdAt time.Tim
 		name:      strings.TrimSpace(name),
 		email:     strings.TrimSpace(email),
 		password:  password,
-		createdAt: createdAt.UTC(),
-		updatedAt: updatedAt.UTC(),
+		createdAt: createdAt,
+		updatedAt: updatedAt,
 	}
 
 	if err := user.validate(); err != nil {
@@ -58,7 +58,7 @@ func (u *User) validate() error {
 
 func (u *User) SetHashedPassword(p HashedPassword, now time.Time) {
 	u.password = p
-	u.updatedAt = now.UTC()
+	u.updatedAt = now
 }
 
 func (u *User) UpdateProfile(name string, now time.Time) error {
@@ -70,7 +70,7 @@ func (u *User) UpdateProfile(name string, now time.Time) error {
 	}
 
 	*u = newUser
-	u.updatedAt = now.UTC()
+	u.updatedAt = now
 	return nil
 }
 
@@ -102,7 +102,7 @@ func (u *User) ChangePassword(hashedPassword HashedPassword, now time.Time) erro
 	}
 
 	u.password = hashedPassword
-	u.updatedAt = now.UTC()
+	u.updatedAt = now
 	return nil
 }
 
@@ -112,7 +112,7 @@ func (u *User) ChangeName(newName string, now time.Time) error {
 		return domain.ErrEmptyName
 	}
 	u.name = newName
-	u.updatedAt = now.UTC()
+	u.updatedAt = now
 	return nil
 }
 
@@ -122,6 +122,6 @@ func (u *User) ChangeEmail(newEmail string, now time.Time) error {
 		return domain.ErrEmptyEmail
 	}
 	u.email = newEmail
-	u.updatedAt = now.UTC()
+	u.updatedAt = now
 	return nil
 }

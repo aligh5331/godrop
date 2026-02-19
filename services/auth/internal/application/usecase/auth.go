@@ -104,7 +104,7 @@ func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputD
 	}
 
 	newId := uc.idGen.NewId()
-	now := time.Now()
+	now := time.Now().UTC()
 	user, err := entity.NewUser(newId, inputDTO.Name, inputDTO.Email, hp, now, now)
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (uc *AuthUseCase) ChangePassword(ctx context.Context, inputDTO dto.ChangePa
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	if err = user.ChangePassword(hp, time.Now()); err != nil {
+	if err = user.ChangePassword(hp, time.Now().UTC()); err != nil {
 		return nil, err
 	}
 
@@ -190,7 +190,7 @@ func (uc *AuthUseCase) UpdateName(ctx context.Context, inputDTO dto.UpdateUserNa
 		return fmt.Errorf("repo find user by id: %w", err)
 	}
 
-	if err = u.ChangeName(inputDTO.Name, time.Now()); err != nil {
+	if err = u.ChangeName(inputDTO.Name, time.Now().UTC()); err != nil {
 		return err
 	}
 
@@ -215,7 +215,7 @@ func (uc *AuthUseCase) UpdateEmail(ctx context.Context, inputDTO dto.UpdateUserE
 		return domain.ErrEmailNotVerified
 	}
 
-	if err = u.ChangeEmail(newEmail, time.Now()); err != nil {
+	if err = u.ChangeEmail(newEmail, time.Now().UTC()); err != nil {
 		return err
 	}
 
