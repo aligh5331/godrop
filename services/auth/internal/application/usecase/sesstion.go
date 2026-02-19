@@ -246,7 +246,13 @@ func (uc *SessionUseCase) RevokeSession(ctx context.Context, sessionID string) e
 
 func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID string) error {
 
-	sessions, err := uc.repo.GetActiveSessionsByUserID(ctx, userID)
+	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	sessions, err := txRepo.GetActiveSessionsByUserID(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -259,7 +265,7 @@ func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID stri
 		keys = append(keys, "at:"+string(s.Token()))
 	}
 
-	refreshTokens, err := uc.repo.GetActiveRefreshTokensBySessionIDs(ctx, sessionIDs...)
+	refreshTokens, err := txRepo.GetActiveRefreshTokensBySessionIDs(ctx, sessionIDs...)
 	if err != nil {
 		return err
 	}
@@ -267,9 +273,14 @@ func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID stri
 		keys = append(keys, "rt:"+string(rt.HashedToken()))
 	}
 
-	if err = uc.repo.DeleteAllUserSessionsAndRefreshTokens(ctx, userID); err != nil {
+	if err = txRepo.DeleteAllUserSessionsAndRefreshTokens(ctx, userID); err != nil {
 		return err
 	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
 	_ = uc.cache.DeleteMultiple(ctx, keys...)
 
 	return nil
