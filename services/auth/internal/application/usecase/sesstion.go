@@ -61,11 +61,11 @@ func (uc *SessionUseCase) CreateNewSession(
 
 	sessionE, err := entity.NewSession(
 		sID,
+		userID,
 		metadataDTO.ClientAgent,
 		metadataDTO.IP,
-		userID,
 		hSessionToken,
-		now, uc.sDuration,
+		now, now, now.Add(uc.sDuration),
 	)
 	rtID := uc.idGen.NewId()
 	if err != nil {
