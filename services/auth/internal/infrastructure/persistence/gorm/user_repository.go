@@ -16,6 +16,28 @@ type UserRepository struct {
 	db *gorm.DB
 }
 
+type Transaction struct {
+	tx *gorm.DB
+}
+
+func (t *Transaction) Commit() error {
+	return t.tx.Commit().Error
+}
+
+func (t *Transaction) Rollback() error {
+	return t.tx.Rollback().Error
+}
+
+func (u *UserRepository) BeginTx(ctx context.Context) (repository.UserRepository, repository.Transaction, error) {
+	tx := u.db.WithContext(ctx).Begin()
+	if tx.Error != nil {
+		return nil, nil, tx.Error
+	}
+
+	txRepo := &UserRepository{db: tx} // same repo, but backed by the tx
+	return txRepo, &Transaction{tx: tx}, nil
+}
+
 func (u *UserRepository) Create(ctx context.Context, user *entity.User) error {
 
 	gu := toGormUser(user)
