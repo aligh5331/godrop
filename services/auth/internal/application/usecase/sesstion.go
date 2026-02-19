@@ -31,7 +31,7 @@ func (uc *SessionUseCase) CreateNewSession(
 		return nil, err
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 
 	sID := uc.idGen.NewId()
 
@@ -110,7 +110,7 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 		return nil, err
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	var refreshTokenE *entity.RefreshToken
 	//cache check
 	cachedData, err := uc.cache.Get(ctx, "rt:"+string(hRefreshToken))
@@ -310,7 +310,7 @@ func (uc *SessionUseCase) EnsureAccessTokenValid(ctx context.Context, AccessT st
 		return err
 	}
 
-	now := time.Now()
+	now := time.Now().UTC()
 	if !session.IsValid(now) {
 		return domain.ErrInvalidSession
 	}
