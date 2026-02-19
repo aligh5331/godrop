@@ -326,5 +326,8 @@ func (uc *SessionUseCase) EnsureAccessTokenValid(ctx context.Context, AccessT st
 	if !session.IsValid(now) {
 		return domain.ErrInvalidSession
 	}
+	_ = uc.cache.Set(ctx, "at:"+string(hAccessT),
+		dto.SessionMetadataDTO{IP: session.IP(), ClientAgent: session.UserAgent()},
+		session.ExpiresAt().Sub(now))
 	return nil
 }
