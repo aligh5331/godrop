@@ -27,7 +27,7 @@ type SessionRepository interface {
 
 	// Updates & Security
 	UpdateSession(ctx context.Context, session *entity.Session) error
-	RevokeRefreshToken(ctx context.Context, sessionID string) error // For rotation detection
+	RevokeRefreshToken(ctx context.Context, refreshTokenID string) error // For rotation detection
 
 	//Transaction
 	BeginTx(ctx context.Context) (SessionRepository, Transaction, error)
