@@ -11,7 +11,6 @@ type SessionMetadataDTO struct {
 }
 
 type SessionDTO struct {
-	SessionId   string
-	AccessToken string
-	Metadata    SessionMetadataDTO
+	SessionId string
+	Metadata  SessionMetadataDTO
 }

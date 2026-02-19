@@ -15,4 +15,5 @@ type CacheRepository interface {
 
 	// Removal
 	Delete(ctx context.Context, key string) error
+	DeleteMultiple(ctx context.Context, keys ...string) error
 }

@@ -23,6 +23,7 @@ type SessionRepository interface {
 
 	GetRefreshTokenBySessionID(ctx context.Context, sessionID string) (*entity.RefreshToken, error)
 	GetRefreshTokenEntityByRefreshToken(ctx context.Context, token entity.HashedToken) (*entity.RefreshToken, error)
+	GetActiveRefreshTokensBySessionIDs(ctx context.Context, sessionIDs ...string) ([]*entity.RefreshToken, error)
 
 	// Updates & Security
 	UpdateSession(ctx context.Context, session *entity.Session) error
@@ -33,4 +34,5 @@ type SessionRepository interface {
 
 	// Deletion
 	DeleteSession(ctx context.Context, sessionID string) error
+	DeleteAllUserSessionsAndRefreshTokens(ctx context.Context, userID string) error
 }

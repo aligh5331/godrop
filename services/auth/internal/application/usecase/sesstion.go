@@ -244,13 +244,55 @@ func (uc *SessionUseCase) RevokeSession(ctx context.Context, sessionID string) e
 }
 
 func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID string) error {
-	//TODO implement me
-	panic("implement me")
+
+	sessions, err := uc.repo.GetActiveSessionsByUserID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	var keys []string
+	sessionIDs := make([]string, len(sessions))
+
+	for i, s := range sessions {
+		sessionIDs[i] = s.ID()
+		keys = append(keys, "at:"+string(s.Token()))
+	}
+
+	refreshTokens, err := uc.repo.GetActiveRefreshTokensBySessionIDs(ctx, sessionIDs...)
+	if err != nil {
+		return err
+	}
+	for _, rt := range refreshTokens {
+		keys = append(keys, "rt:"+string(rt.HashedToken()))
+	}
+
+	if err = uc.repo.DeleteAllUserSessionsAndRefreshTokens(ctx, userID); err != nil {
+		return err
+	}
+	_ = uc.cache.DeleteMultiple(ctx, keys...)
+
+	return nil
 }
 
 func (uc *SessionUseCase) GetUserSessions(ctx context.Context, userID string) ([]*dto.SessionDTO, error) {
-	//TODO implement me
-	panic("implement me")
+
+	sessions, err := uc.repo.GetActiveSessionsByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []*dto.SessionDTO
+	for _, session := range sessions {
+		out = append(out, &dto.SessionDTO{
+			SessionId: session.ID(),
+			Metadata: dto.SessionMetadataDTO{
+				IP:          session.IP(),
+				ClientAgent: session.UserAgent(),
+			},
+		})
+	}
+
+	return out, nil
 }
 
 func (uc *SessionUseCase) EnsureAccessTokenValid(ctx context.Context, AccessT string) error {
