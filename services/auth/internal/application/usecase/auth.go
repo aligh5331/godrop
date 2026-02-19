@@ -154,12 +154,12 @@ func (uc *AuthUseCase) ChangePassword(ctx context.Context, inputDTO dto.ChangePa
 		return nil, err
 	}
 
-	if err = uc.repo.Update(ctx, user); err != nil {
-		return nil, fmt.Errorf("repo update: %w", err)
-	}
-
 	if err = uc.sessionUc.RevokeAllUserSessions(ctx, user.Id()); err != nil {
 		return nil, err
+	}
+
+	if err = uc.repo.Update(ctx, user); err != nil {
+		return nil, fmt.Errorf("repo update: %w", err)
 	}
 
 	tokens, err := uc.sessionUc.CreateNewSession(ctx, user.Id(), metadataDTO)
