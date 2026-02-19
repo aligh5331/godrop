@@ -2,8 +2,7 @@ package entity
 
 import (
 	"auth/internal/domain"
-	"fmt"
-	"strconv"
+	"encoding/json"
 	"strings"
 	"time"
 )
@@ -13,13 +12,12 @@ type RefreshToken struct {
 	id          string
 	sessionID   string
 	hashedToken HashedToken
-	isRevoked   bool
 	createdAt   time.Time
 	expiresAt   time.Time
 	revokedAt   time.Time
 }
 
-func NewRefreshToken(id, sessionID string, hashedToken HashedToken, createdAt time.Time, expDuration time.Duration) (*RefreshToken, error) {
+func NewRefreshToken(id, sessionID string, hashedToken HashedToken, createdAt, expiresAt time.Time, revokedAt time.Time) (*RefreshToken, error) {
 
 	id = strings.TrimSpace(id)
 	sessionID = strings.TrimSpace(sessionID)
@@ -40,7 +38,8 @@ func NewRefreshToken(id, sessionID string, hashedToken HashedToken, createdAt ti
 		hashedToken: hashedToken,
 		sessionID:   sessionID,
 		createdAt:   createdAt,
-		expiresAt:   createdAt.Add(expDuration),
+		expiresAt:   expiresAt,
+		revokedAt:   revokedAt,
 	}, nil
 }
 
@@ -85,11 +84,10 @@ func (rt *RefreshToken) EnsureValid(now time.Time) error {
 
 func (rt *RefreshToken) Revoke(now time.Time) {
 	rt.revokedAt = now
-	rt.isRevoked = true
 }
 
 func (rt *RefreshToken) IsRevoked() bool {
-	return rt.isRevoked
+	return !rt.revokedAt.IsZero()
 }
 func (rt *RefreshToken) ID() string {
 	return rt.id
@@ -110,54 +108,46 @@ func (rt *RefreshToken) ExpiresAt() time.Time {
 	return rt.expiresAt
 }
 
-type SerializeRefreshTokenE string
-
-// Format: id|sessionID|hashedToken|isRevoked|createdAt(Unix)|expiresAt(Unix)
-func (rt *RefreshToken) Serialize() SerializeRefreshTokenE {
-	isRevoked := "0"
-	if rt.IsRevoked() {
-		isRevoked = "1"
-	}
-
-	return SerializeRefreshTokenE(fmt.Sprintf("%s|%s|%s|%s|%d|%d|%d",
-		rt.ID(),
-		rt.SessionID(),
-		rt.HashedToken(),
-		isRevoked,
-		rt.CreatedAt().Unix(),
-		rt.ExpiresAt().Unix(),
-		rt.RevokedAt().Unix(),
-	),
-	)
+type refreshTokenJSON struct {
+	ID          string `json:"id"`
+	SessionID   string `json:"sid"`
+	HashedToken string `json:"ht"`
+	CreatedAt   int64  `json:"cat"`
+	ExpiresAt   int64  `json:"eat"`
+	RevokedAt   int64  `json:"rat"`
 }
-func Unserialize(s SerializeRefreshTokenE) *RefreshToken {
-	val := string(s)
-	parts := strings.Split(val, "|")
-	if len(parts) < 7 {
-		return nil
-	}
 
-	// Parse timestamps
-	createdUnix, err := strconv.ParseInt(parts[4], 10, 64)
-	if err != nil {
-		return nil
+func (rt *RefreshToken) Serialize() (string, error) {
+	j := refreshTokenJSON{
+		ID:          rt.id,
+		SessionID:   rt.sessionID,
+		HashedToken: string(rt.hashedToken),
+		CreatedAt:   rt.createdAt.Unix(),
+		ExpiresAt:   rt.expiresAt.Unix(),
+		RevokedAt:   -1,
 	}
-	expiresUnix, err := strconv.ParseInt(parts[5], 10, 64)
-	if err != nil {
-		return nil
+	if rt.IsRevoked() {
+		j.RevokedAt = rt.revokedAt.Unix()
 	}
-	revokedUnix, err := strconv.ParseInt(parts[6], 10, 64)
+	b, err := json.Marshal(j)
+	return string(b), err
+}
 
-	// Parse boolean
-	isRevoked := parts[3] == "1"
-
+func UnserializeRefreshToken(s string) (*RefreshToken, error) {
+	var j refreshTokenJSON
+	if err := json.Unmarshal([]byte(s), &j); err != nil {
+		return nil, err
+	}
+	revokedAt := time.Time{}
+	if j.RevokedAt != -1 {
+		revokedAt = time.Unix(j.RevokedAt, 0)
+	}
 	return &RefreshToken{
-		id:          parts[0],
-		sessionID:   parts[1],
-		hashedToken: HashedToken(parts[2]),
-		isRevoked:   isRevoked,
-		createdAt:   time.Unix(createdUnix, 0),
-		expiresAt:   time.Unix(expiresUnix, 0),
-		revokedAt:   time.Unix(revokedUnix, 0),
-	}
+		id:          j.ID,
+		sessionID:   j.SessionID,
+		hashedToken: HashedToken(j.HashedToken),
+		createdAt:   time.Unix(j.CreatedAt, 0),
+		expiresAt:   time.Unix(j.ExpiresAt, 0),
+		revokedAt:   revokedAt,
+	}, nil
 }

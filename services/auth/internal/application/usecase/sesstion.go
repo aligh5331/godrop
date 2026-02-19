@@ -71,7 +71,7 @@ func (uc *SessionUseCase) CreateNewSession(
 	if err != nil {
 		return nil, err
 	}
-	refreshTokenE, err := entity.NewRefreshToken(rtID, sID, hRefreshToken, now, uc.rtDuration)
+	refreshTokenE, err := entity.NewRefreshToken(rtID, sID, hRefreshToken, now, now.Add(uc.rtDuration), time.Time{})
 	if err != nil {
 		return nil, err
 	}
@@ -93,9 +93,9 @@ func (uc *SessionUseCase) CreateNewSession(
 		return nil, err
 	}
 
-	val := refreshTokenE.Serialize()
+	val, _ := refreshTokenE.Serialize()
 	_ = uc.cache.Set(ctx, "at:"+string(hSessionToken), metadataDTO, uc.sDuration)
-	_ = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), string(val), uc.rtDuration)
+	_ = uc.cache.Set(ctx, "rt:"+string(hRefreshToken), val, uc.rtDuration)
 
 	return &dto.TokenPairDTO{
 		RefreshToken: refreshToken,
@@ -116,7 +116,7 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 	cachedData, err := uc.cache.Get(ctx, "rt:"+string(hRefreshToken))
 
 	if err == nil && cachedData != "" {
-		refreshTokenE = entity.Unserialize(entity.SerializeRefreshTokenE(cachedData))
+		refreshTokenE, _ = entity.UnserializeRefreshToken(cachedData)
 	}
 
 	if refreshTokenE == nil {
@@ -167,7 +167,7 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 	}
 
 	ID := uc.idGen.NewId()
-	newRefreshTE, err := entity.NewRefreshToken(ID, session.ID(), newHRefreshT, now, uc.rtDuration)
+	newRefreshTE, err := entity.NewRefreshToken(ID, session.ID(), newHRefreshT, now, now.Add(uc.rtDuration), time.Time{})
 	if err != nil {
 		return nil, err
 	}
@@ -179,6 +179,7 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 	}
 	defer tx.Rollback() // no-op if already committed
 
+	oldHAccessT := session.Token()
 	session.SetToken(newHAccessT, now, uc.sDuration)
 
 	if err = txRepo.UpdateSession(ctx, session); err != nil {
@@ -195,12 +196,12 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 		return nil, err
 	}
 
-	//remove cache
-	_ = uc.cache.Delete(ctx, "at:"+string(session.Token()))
+	//cache
+	_ = uc.cache.Delete(ctx, "at:"+string(oldHAccessT))
 	_ = uc.cache.Delete(ctx, "rt:"+string(hRefreshToken))
-	val := newRefreshTE.Serialize()
+	val, _ := newRefreshTE.Serialize()
 	_ = uc.cache.Set(ctx, "at:"+string(newHAccessT), metadataDTO, uc.sDuration)
-	_ = uc.cache.Set(ctx, "rt:"+string(newHRefreshT), string(val), uc.rtDuration)
+	_ = uc.cache.Set(ctx, "rt:"+string(newHRefreshT), val, uc.rtDuration)
 
 	return &dto.TokenPairDTO{
 		RefreshToken: newRefreshT,
