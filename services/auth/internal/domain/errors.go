@@ -34,6 +34,8 @@ var (
 	ErrPasswordTooShort = &ValidationError{Field: "password", Message: "password too short"}
 	ErrPasswordTooWeak  = &ValidationError{Field: "password", Message: "password too weak"}
 	ErrPasswordNotMatch = &ValidationError{Field: "password", Message: "password not match"}
+	ErrInvalidEmail     = &ValidationError{Field: "email", Message: "invalid email"}
+	ErrInvalidIP        = &ValidationError{Field: "ip", Message: "invalid ip"}
 )
 
 var (
@@ -47,7 +49,8 @@ var (
 )
 
 var (
-	ErrMissCache = errors.New("miss cache")
+	ErrMissCache     = errors.New("miss cache")
+	ErrCacheNotFound = errors.New("cache: key not found")
 )
 
 var (
