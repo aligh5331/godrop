@@ -49,3 +49,8 @@ var (
 var (
 	ErrMissCache = errors.New("miss cache")
 )
+
+var (
+	ErrSessionNotFound      = errors.New("session not found")
+	ErrRefreshTokenNotFound = errors.New("refresh token not found")
+)

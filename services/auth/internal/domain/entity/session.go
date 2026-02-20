@@ -61,7 +61,9 @@ func (s *Session) Revoke(now time.Time) {
 	s.isRevoked = true
 	s.updatedAt = now.UTC()
 }
-
+func (s *Session) IsRevoke() bool {
+	return s.isRevoked
+}
 func (s *Session) ID() string {
 	return s.id
 }
