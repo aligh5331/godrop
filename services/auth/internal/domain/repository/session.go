@@ -1,8 +1,9 @@
 package repository
 
 import (
-	"auth/internal/domain/entity"
 	"context"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
 )
 
 type Transaction interface {

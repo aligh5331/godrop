@@ -1,11 +1,12 @@
 package cache
 
 import (
-	"auth/internal/domain"
 	"context"
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
 
 	"github.com/redis/go-redis/v9"
 )

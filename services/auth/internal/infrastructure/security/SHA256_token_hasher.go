@@ -1,10 +1,11 @@
 package security
 
 import (
-	"auth/internal/domain/entity"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
 )
 
 type SHA256TokenHasher struct{}

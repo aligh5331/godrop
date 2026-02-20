@@ -1,17 +1,18 @@
 package usecase
 
 import (
-	"auth/internal/application/dto"
-	ar "auth/internal/application/repository"
-	"auth/internal/domain"
-	"auth/internal/domain/entity"
-	"auth/internal/domain/helpers"
-	dr "auth/internal/domain/repository"
 	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/application/dto"
+	ar "github.com/aligh5331/godrop/services/auth/internal/application/repository"
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/helpers"
+	dr "github.com/aligh5331/godrop/services/auth/internal/domain/repository"
 )
 
 type AuthUseCase struct {

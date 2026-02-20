@@ -1,9 +1,10 @@
 package security
 
 import (
-	"auth/internal/application/dto"
 	"testing"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/application/dto"
 
 	"github.com/golang-jwt/jwt/v5"
 )

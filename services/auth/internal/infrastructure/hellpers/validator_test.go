@@ -1,10 +1,11 @@
 package hellpers
 
 import (
-	"auth/internal/domain"
 	"errors"
 	"strings"
 	"testing"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
 )
 
 func TestValidator_ValidatePassword(t *testing.T) {

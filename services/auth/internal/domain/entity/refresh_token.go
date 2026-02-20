@@ -1,10 +1,11 @@
 package entity
 
 import (
-	"auth/internal/domain"
 	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
 )
 
 type HashedToken string

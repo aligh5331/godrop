@@ -1,11 +1,12 @@
 package security
 
 import (
-	"auth/internal/domain"
-	"auth/internal/domain/entity"
-	"auth/internal/domain/helpers"
 	"errors"
 	"fmt"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/helpers"
 
 	"golang.org/x/crypto/bcrypt"
 )

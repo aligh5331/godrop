@@ -1,11 +1,12 @@
 package hellpers
 
 import (
-	"auth/internal/domain"
 	"net"
 	"net/mail"
 	"strings"
 	"unicode"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
 )
 
 type Validator struct{}

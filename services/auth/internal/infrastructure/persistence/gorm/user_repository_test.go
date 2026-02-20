@@ -1,8 +1,6 @@
 package gorm
 
 import (
-	"auth/internal/domain"
-	"auth/internal/domain/entity"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +9,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

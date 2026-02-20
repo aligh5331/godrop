@@ -1,4 +1,4 @@
-module auth
+module github.com/aligh5331/godrop/services/auth
 
 go 1.25.5
 

@@ -1,9 +1,10 @@
 package entity
 
 import (
-	"auth/internal/domain"
 	"strings"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
 )
 
 type Session struct {

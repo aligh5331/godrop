@@ -1,9 +1,10 @@
 package security
 
 import (
-	"auth/internal/domain"
-	"auth/internal/domain/entity"
 	"testing"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
 
 	"golang.org/x/crypto/bcrypt"
 )

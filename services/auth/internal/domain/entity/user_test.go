@@ -1,11 +1,12 @@
 package entity
 
 import (
-	"auth/internal/domain"
 	"errors"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
 )
 
 func fixedTime() time.Time {

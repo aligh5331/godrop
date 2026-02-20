@@ -1,8 +1,9 @@
 package security
 
 import (
-	"auth/internal/domain/entity"
 	"testing"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
 )
 
 func TestSHA256TokenHasher_Hash(t *testing.T) {

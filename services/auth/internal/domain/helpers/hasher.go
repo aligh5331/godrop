@@ -1,6 +1,6 @@
 package helpers
 
-import "auth/internal/domain/entity"
+import "github.com/aligh5331/godrop/services/auth/internal/domain/entity"
 
 type PasswordHasher interface {
 	Hash(password string) (entity.HashedPassword, error)

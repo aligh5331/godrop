@@ -1,15 +1,16 @@
 package usecase
 
 import (
-	"auth/internal/application/dto"
-	ap "auth/internal/application/repository"
-	"auth/internal/domain"
-	"auth/internal/domain/entity"
-	"auth/internal/domain/helpers"
-	"auth/internal/domain/repository"
 	"context"
 	"errors"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/application/dto"
+	ap "github.com/aligh5331/godrop/services/auth/internal/application/repository"
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/helpers"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/repository"
 )
 
 type SessionUseCase struct {

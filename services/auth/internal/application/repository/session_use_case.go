@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"auth/internal/application/dto"
 	"context"
+	"github.com/aligh5331/godrop/services/auth/internal/application/dto"
 )
 
 type SessionUseCase interface {

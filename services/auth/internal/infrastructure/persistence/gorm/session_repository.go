@@ -1,12 +1,13 @@
 package gorm
 
 import (
-	"auth/internal/domain"
-	"auth/internal/domain/entity"
-	"auth/internal/domain/repository"
 	"context"
 	"fmt"
 	"time"
+
+	"github.com/aligh5331/godrop/services/auth/internal/domain"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/repository"
 
 	"gorm.io/gorm"
 )
