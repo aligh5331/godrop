@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"auth/internal/application/dto"
+	ap "auth/internal/application/repository"
 	"auth/internal/domain"
 	"auth/internal/domain/entity"
 	"auth/internal/domain/helpers"
@@ -20,6 +21,28 @@ type SessionUseCase struct {
 	hasher     helpers.TokenHasher
 	tokenGen   helpers.TokenGenerator
 	validator  helpers.Validator
+}
+
+func NewSessionUseCase(
+	sDuration time.Duration,
+	rtDuration time.Duration,
+	repo repository.SessionRepository,
+	cacheRepository repository.CacheRepository,
+	idGen helpers.IdGenerator,
+	hasher helpers.TokenHasher,
+	tokenGen helpers.TokenGenerator,
+	validator helpers.Validator,
+) ap.SessionUseCase {
+	return &SessionUseCase{
+		sDuration:  sDuration,
+		rtDuration: rtDuration,
+		repo:       repo,
+		cache:      cacheRepository,
+		idGen:      idGen,
+		hasher:     hasher,
+		tokenGen:   tokenGen,
+		validator:  validator,
+	}
 }
 
 func (uc *SessionUseCase) CreateNewSession(
