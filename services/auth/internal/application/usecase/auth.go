@@ -82,10 +82,26 @@ func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputD
 	if err := uc.validator.ValidatePassword(inputDTO.Password); err != nil {
 		return nil, err
 	}
-
+	if err := uc.validator.ValidateIP(metadataDTO.IP); err != nil {
+		return nil, domain.ErrInvalidIP
+	}
 	if err := uc.validator.ValidateEmail(inputDTO.Email); err != nil {
 		return nil, err
 	}
+
+	hp, err := uc.hasher.Hash(inputDTO.Password)
+	if err != nil {
+		return nil, fmt.Errorf("hash password: %w", err)
+	}
+
+	newId := uc.idGen.NewId()
+	now := time.Now().UTC()
+
+	ctx, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
 
 	if _, err := uc.repo.FindByEmail(ctx, inputDTO.Email); err != nil {
 		if !errors.Is(err, domain.ErrUserNotFound) {
@@ -99,13 +115,6 @@ func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputD
 		return nil, domain.ErrEmailNotVerified
 	}
 
-	hp, err := uc.hasher.Hash(inputDTO.Password)
-	if err != nil {
-		return nil, fmt.Errorf("hash password: %w", err)
-	}
-
-	newId := uc.idGen.NewId()
-	now := time.Now().UTC()
 	user, err := entity.NewUser(newId, inputDTO.Name, inputDTO.Email, hp, now, now)
 	if err != nil {
 		return nil, err
@@ -120,6 +129,9 @@ func (uc *AuthUseCase) Register(ctx context.Context, inputDTO dto.RegisterInputD
 		return nil, fmt.Errorf("create new session: %w", err)
 	}
 
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
 	userDTO := &dto.UserDTO{
 		ID:    user.Id(),
 		Name:  user.Name(),

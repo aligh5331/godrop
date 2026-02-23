@@ -13,7 +13,6 @@ type User struct {
 	name      string
 	email     string
 	password  HashedPassword
-	active    bool
 	createdAt time.Time
 	updatedAt time.Time
 }
