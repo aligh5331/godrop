@@ -31,7 +31,7 @@ type SessionRepository interface {
 	RevokeRefreshToken(ctx context.Context, refreshTokenID string) error // For rotation detection
 
 	//Transaction
-	BeginTx(ctx context.Context) (SessionRepository, Transaction, error)
+	BeginTx(ctx context.Context) (context.Context, Transaction, error)
 
 	// Deletion
 	DeleteSession(ctx context.Context, sessionID string) error

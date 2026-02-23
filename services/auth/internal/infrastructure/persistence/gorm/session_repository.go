@@ -7,6 +7,7 @@ import (
 
 	"github.com/aligh5331/godrop/services/auth/internal/domain"
 	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/helpers"
 	"github.com/aligh5331/godrop/services/auth/internal/domain/repository"
 
 	"gorm.io/gorm"
@@ -14,6 +15,12 @@ import (
 
 type SessionRepository struct {
 	db *gorm.DB
+}
+
+func NewSessionRepository(db *gorm.DB) repository.SessionRepository {
+	return &SessionRepository{
+		db: db,
+	}
 }
 
 type gSession struct {
@@ -92,16 +99,21 @@ func (gr *gRefreshToken) toDRefreshToken() (*entity.RefreshToken, error) {
 }
 
 func (r *SessionRepository) CreateSession(ctx context.Context, session *entity.Session) error {
-	return r.db.WithContext(ctx).Create(toGSession(session)).Error
+	db := GetDB(ctx, r.db)
+	return db.WithContext(ctx).Create(toGSession(session)).Error
 }
 
 func (r *SessionRepository) CreateRefreshToken(ctx context.Context, refreshToken *entity.RefreshToken) error {
-	return r.db.WithContext(ctx).Create(toGRefreshToken(refreshToken)).Error
+	db := GetDB(ctx, r.db)
+
+	return db.WithContext(ctx).Create(toGRefreshToken(refreshToken)).Error
 }
 
 func (r *SessionRepository) GetSessionByID(ctx context.Context, id string) (*entity.Session, error) {
 	var session *gSession
-	err := r.db.WithContext(ctx).Where("id = ?", id).First(&session).Error
+	db := GetDB(ctx, r.db)
+
+	err := db.WithContext(ctx).Where("id = ?", id).First(&session).Error
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +122,9 @@ func (r *SessionRepository) GetSessionByID(ctx context.Context, id string) (*ent
 
 func (r *SessionRepository) GetSessionByRefreshToken(ctx context.Context, token entity.HashedToken) (*entity.Session, error) {
 	var refreshToken *gRefreshToken
-	err := r.db.WithContext(ctx).Where("hashed_token = ?", token).First(&refreshToken).Error
+	db := GetDB(ctx, r.db)
+
+	err := db.WithContext(ctx).Where("hashed_token = ?", token).First(&refreshToken).Error
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +133,9 @@ func (r *SessionRepository) GetSessionByRefreshToken(ctx context.Context, token 
 
 func (r *SessionRepository) GetSessionByAccessToken(ctx context.Context, token entity.HashedToken) (*entity.Session, error) {
 	var session *gSession
-	err := r.db.WithContext(ctx).Where("hashed_token = ?", token).First(&session).Error
+	db := GetDB(ctx, r.db)
+
+	err := db.WithContext(ctx).Where("hashed_token = ?", token).First(&session).Error
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +144,9 @@ func (r *SessionRepository) GetSessionByAccessToken(ctx context.Context, token e
 
 func (r *SessionRepository) GetActiveSessionsByUserID(ctx context.Context, userID string) ([]*entity.Session, error) {
 	var models []gSession
-	result := r.db.WithContext(ctx).
+	db := GetDB(ctx, r.db)
+
+	result := db.WithContext(ctx).
 		Where("user_id = ? AND expires_at > ? AND is_revoked = false", userID, time.Now().UTC()).
 		Find(&models)
 	if result.Error != nil {
@@ -143,7 +161,9 @@ func (r *SessionRepository) GetActiveSessionsByUserID(ctx context.Context, userI
 }
 func (r *SessionRepository) GetRefreshTokenBySessionID(ctx context.Context, sessionID string) (*entity.RefreshToken, error) {
 	var refreshToken *gRefreshToken
-	err := r.db.WithContext(ctx).Where("session_id = ? AND revoked_at = ?", sessionID, time.Time{}).First(&refreshToken).Error
+	db := GetDB(ctx, r.db)
+
+	err := db.WithContext(ctx).Where("session_id = ? AND revoked_at = ?", sessionID, time.Time{}).First(&refreshToken).Error
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +172,9 @@ func (r *SessionRepository) GetRefreshTokenBySessionID(ctx context.Context, sess
 
 func (r *SessionRepository) GetRefreshTokenEntityByRefreshToken(ctx context.Context, token entity.HashedToken) (*entity.RefreshToken, error) {
 	var refreshToken *gRefreshToken
-	err := r.db.WithContext(ctx).Where("hashed_token = ?", token).First(&refreshToken).Error
+	db := GetDB(ctx, r.db)
+
+	err := db.WithContext(ctx).Where("hashed_token = ?", token).First(&refreshToken).Error
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +183,9 @@ func (r *SessionRepository) GetRefreshTokenEntityByRefreshToken(ctx context.Cont
 
 func (r *SessionRepository) GetActiveRefreshTokensBySessionIDs(ctx context.Context, sessionIDs ...string) ([]*entity.RefreshToken, error) {
 	var models []gRefreshToken
-	result := r.db.WithContext(ctx).
+	db := GetDB(ctx, r.db)
+
+	result := db.WithContext(ctx).
 		Where("session_id IN ? AND revoked_at = ?", sessionIDs, time.Time{}).
 		Find(&models)
 	if result.Error != nil {
@@ -175,7 +199,9 @@ func (r *SessionRepository) GetActiveRefreshTokensBySessionIDs(ctx context.Conte
 }
 
 func (r *SessionRepository) UpdateSession(ctx context.Context, session *entity.Session) error {
-	res := r.db.WithContext(ctx).
+	db := GetDB(ctx, r.db)
+
+	res := db.WithContext(ctx).
 		Model(&gSession{}).
 		Where("id = ?", session.ID()).
 		Updates(map[string]interface{}{
@@ -198,7 +224,9 @@ func (r *SessionRepository) UpdateSession(ctx context.Context, session *entity.S
 }
 
 func (r *SessionRepository) RevokeRefreshToken(ctx context.Context, refreshTokenID string) error {
-	res := r.db.WithContext(ctx).
+	db := GetDB(ctx, r.db)
+
+	res := db.WithContext(ctx).
 		Model(&gRefreshToken{}).
 		Where("id = ?", refreshTokenID).
 		Updates(map[string]interface{}{
@@ -211,7 +239,9 @@ func (r *SessionRepository) RevokeRefreshToken(ctx context.Context, refreshToken
 }
 
 func (r *SessionRepository) DeleteSession(ctx context.Context, sessionID string) error {
-	res := r.db.WithContext(ctx).
+	db := GetDB(ctx, r.db)
+
+	res := db.WithContext(ctx).
 		Where("id = ?", sessionID).
 		Delete(&gSession{})
 	if res.Error != nil {
@@ -224,10 +254,12 @@ func (r *SessionRepository) DeleteSession(ctx context.Context, sessionID string)
 }
 
 func (r *SessionRepository) DeleteAllUserSessionsAndRefreshTokens(ctx context.Context, userID string) error {
+	db := GetDB(ctx, r.db)
+
 	// delete RTs via subquery
-	err := r.db.WithContext(ctx).
+	err := db.WithContext(ctx).
 		Where("session_id IN (?)",
-			r.db.Model(&gSession{}).
+			db.Model(&gSession{}).
 				Select("id").
 				Where("user_id = ?", userID),
 		).
@@ -236,7 +268,7 @@ func (r *SessionRepository) DeleteAllUserSessionsAndRefreshTokens(ctx context.Co
 		return err
 	}
 
-	return r.db.WithContext(ctx).
+	return db.WithContext(ctx).
 		Where("user_id = ?", userID).
 		Delete(&gSession{}).Error
 }
@@ -253,12 +285,18 @@ func (t *SRTransaction) Rollback() error {
 	return t.tx.Rollback().Error
 }
 
-func (r *SessionRepository) BeginTx(ctx context.Context) (repository.SessionRepository, repository.Transaction, error) {
+func (r *SessionRepository) BeginTx(ctx context.Context) (context.Context, repository.Transaction, error) {
+	if _, ok := ctx.Value(helpers.TxKey{}).(*gorm.DB); ok {
+		// A transaction already exists. Return the context as-is
+		// and a NO-OP transaction so the caller doesn't break the parent TX.
+		return ctx, &noOpTx{}, nil
+	}
+
 	tx := r.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return nil, nil, tx.Error
 	}
 
-	txRepo := &SessionRepository{db: tx} // same repo, but backed by the tx
-	return txRepo, &SRTransaction{tx: tx}, nil
+	newCtx := context.WithValue(ctx, helpers.TxKey{}, tx)
+	return newCtx, &SRTransaction{tx: tx}, nil
 }

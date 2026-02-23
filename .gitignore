@@ -30,4 +30,6 @@ go.work.sum
 # Editor/IDE
 .idea/
 .vscode/
+
+# sandbox service to test gRPCs of other services
 services/temp
