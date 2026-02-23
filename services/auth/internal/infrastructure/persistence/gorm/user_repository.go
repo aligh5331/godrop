@@ -8,6 +8,7 @@ import (
 
 	"github.com/aligh5331/godrop/services/auth/internal/domain"
 	"github.com/aligh5331/godrop/services/auth/internal/domain/entity"
+	"github.com/aligh5331/godrop/services/auth/internal/domain/helpers"
 	"github.com/aligh5331/godrop/services/auth/internal/domain/repository"
 
 	"gorm.io/gorm"
@@ -21,6 +22,9 @@ type URTransaction struct {
 	tx *gorm.DB
 }
 
+func (t *URTransaction) Tx() *gorm.DB {
+	return t.tx
+}
 func (t *URTransaction) Commit() error {
 	return t.tx.Commit().Error
 }
@@ -29,29 +33,35 @@ func (t *URTransaction) Rollback() error {
 	return t.tx.Rollback().Error
 }
 
-func (u *UserRepository) BeginTx(ctx context.Context) (repository.UserRepository, repository.Transaction, error) {
+func (u *UserRepository) BeginTx(ctx context.Context) (context.Context, repository.Transaction, error) {
+	if _, ok := ctx.Value(helpers.TxKey{}).(*gorm.DB); ok {
+		// A transaction already exists. Return the context as-is
+		// and a NO-OP transaction so the caller doesn't break the parent TX.
+		return ctx, &noOpTx{}, nil
+	}
+
 	tx := u.db.WithContext(ctx).Begin()
 	if tx.Error != nil {
 		return nil, nil, tx.Error
 	}
 
-	txRepo := &UserRepository{db: tx} // same repo, but backed by the tx
-	return txRepo, &URTransaction{tx: tx}, nil
+	newCtx := context.WithValue(ctx, helpers.TxKey{}, tx)
+	return newCtx, &SRTransaction{tx: tx}, nil
 }
 
 func (u *UserRepository) Create(ctx context.Context, user *entity.User) error {
-
+	db := GetDB(ctx, u.db)
 	gu := toGormUser(user)
-	if err := u.db.WithContext(ctx).Create(gu).Error; err != nil {
+	if err := db.WithContext(ctx).Create(gu).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (u *UserRepository) FindById(ctx context.Context, userUUID string) (*entity.User, error) {
-
+	db := GetDB(ctx, u.db)
 	gu := &gUser{}
-	if err := u.db.WithContext(ctx).Where("id = ?", userUUID).First(gu).Error; err != nil {
+	if err := db.WithContext(ctx).Where("id = ?", userUUID).First(gu).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFound
 		}
@@ -65,9 +75,10 @@ func (u *UserRepository) FindById(ctx context.Context, userUUID string) (*entity
 }
 
 func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*entity.User, error) {
+	db := GetDB(ctx, u.db)
 
 	var gu = &gUser{}
-	if err := u.db.WithContext(ctx).Where("email = ?", email).First(gu).Error; err != nil {
+	if err := db.WithContext(ctx).Where("email = ?", email).First(gu).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, domain.ErrUserNotFound
 		}
@@ -81,8 +92,9 @@ func (u *UserRepository) FindByEmail(ctx context.Context, email string) (*entity
 }
 
 func (u *UserRepository) Update(ctx context.Context, user *entity.User) error {
+	db := GetDB(ctx, u.db)
 
-	res := u.db.WithContext(ctx).
+	res := db.WithContext(ctx).
 		Model(&gUser{}).
 		Where("id = ?", user.Id()).
 		Updates(map[string]interface{}{
@@ -103,9 +115,10 @@ func (u *UserRepository) Update(ctx context.Context, user *entity.User) error {
 }
 
 func (u *UserRepository) Delete(ctx context.Context, user *entity.User) error {
+	db := GetDB(ctx, u.db)
 
 	gu := toGormUser(user)
-	if err := u.db.WithContext(ctx).Delete(gu).Error; err != nil {
+	if err := db.WithContext(ctx).Delete(gu).Error; err != nil {
 		return err
 	}
 	return nil
@@ -122,7 +135,6 @@ type gUser struct {
 	Name      string `gorm:"type:varchar(255);not null"`
 	Email     string `gorm:"type:varchar(255);uniqueIndex;not null"`
 	Password  string `gorm:"type:varchar(255);not null"` // bcrypt outputs 60 chars
-	Active    bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`

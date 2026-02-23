@@ -100,16 +100,16 @@ func (uc *SessionUseCase) CreateNewSession(
 		return nil, err
 	}
 
-	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	ctx, tx, err := uc.repo.BeginTx(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer tx.Rollback() // no-op if already committed
 
-	if err = txRepo.CreateSession(ctx, sessionE); err != nil {
+	if err = uc.repo.CreateSession(ctx, sessionE); err != nil {
 		return nil, err
 	}
-	if err = txRepo.CreateRefreshToken(ctx, refreshTokenE); err != nil {
+	if err = uc.repo.CreateRefreshToken(ctx, refreshTokenE); err != nil {
 		return nil, err
 	}
 
@@ -197,7 +197,7 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 	}
 
 	//update repo
-	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	ctx, tx, err := uc.repo.BeginTx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -206,16 +206,16 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 	oldHAccessT := session.Token()
 	session.SetToken(newHAccessT, now, uc.sDuration)
 
-	if err = txRepo.UpdateSession(ctx, session); err != nil {
+	if err = uc.repo.UpdateSession(ctx, session); err != nil {
 		return nil, err
 	}
-	if err = txRepo.RevokeRefreshToken(ctx, refreshTokenE.ID()); err != nil {
+	if err = uc.repo.RevokeRefreshToken(ctx, refreshTokenE.ID()); err != nil {
+		return nil, err
+	}
+	if err = uc.repo.CreateRefreshToken(ctx, newRefreshTE); err != nil {
 		return nil, err
 	}
 
-	if err = txRepo.CreateRefreshToken(ctx, newRefreshTE); err != nil {
-		return nil, err
-	}
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -234,26 +234,26 @@ func (uc *SessionUseCase) RefreshSession(ctx context.Context, refreshToken strin
 }
 
 func (uc *SessionUseCase) RevokeSession(ctx context.Context, sessionID string) error {
-	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	ctx, tx, err := uc.repo.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback() // no-op if already committed
 
 	// DB Hits
-	session, err := txRepo.GetSessionByID(ctx, sessionID)
+	session, err := uc.repo.GetSessionByID(ctx, sessionID)
 	if err != nil {
 		return err
 	}
-	refreshToken, err := txRepo.GetRefreshTokenBySessionID(ctx, sessionID)
+	refreshToken, err := uc.repo.GetRefreshTokenBySessionID(ctx, sessionID)
 	if err != nil {
 		return err
 	}
 
-	if err = txRepo.RevokeRefreshToken(ctx, refreshToken.ID()); err != nil {
+	if err = uc.repo.RevokeRefreshToken(ctx, refreshToken.ID()); err != nil {
 		return err
 	}
-	if err = txRepo.DeleteSession(ctx, sessionID); err != nil {
+	if err = uc.repo.DeleteSession(ctx, sessionID); err != nil {
 		return err
 	}
 
@@ -270,13 +270,13 @@ func (uc *SessionUseCase) RevokeSession(ctx context.Context, sessionID string) e
 
 func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID string) error {
 
-	txRepo, tx, err := uc.repo.BeginTx(ctx)
+	ctx, tx, err := uc.repo.BeginTx(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	sessions, err := txRepo.GetActiveSessionsByUserID(ctx, userID)
+	sessions, err := uc.repo.GetActiveSessionsByUserID(ctx, userID)
 	if err != nil {
 		return err
 	}
@@ -289,7 +289,7 @@ func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID stri
 		keys = append(keys, "at:"+string(s.Token()))
 	}
 
-	refreshTokens, err := txRepo.GetActiveRefreshTokensBySessionIDs(ctx, sessionIDs...)
+	refreshTokens, err := uc.repo.GetActiveRefreshTokensBySessionIDs(ctx, sessionIDs...)
 	if err != nil {
 		return err
 	}
@@ -297,7 +297,7 @@ func (uc *SessionUseCase) RevokeAllUserSessions(ctx context.Context, userID stri
 		keys = append(keys, "rt:"+string(rt.HashedToken()))
 	}
 
-	if err = txRepo.DeleteAllUserSessionsAndRefreshTokens(ctx, userID); err != nil {
+	if err = uc.repo.DeleteAllUserSessionsAndRefreshTokens(ctx, userID); err != nil {
 		return err
 	}
 
@@ -353,5 +353,30 @@ func (uc *SessionUseCase) EnsureAccessTokenValid(ctx context.Context, AccessT st
 	_ = uc.cache.Set(ctx, "at:"+string(hAccessT),
 		dto.SessionMetadataDTO{IP: session.IP(), ClientAgent: session.UserAgent()},
 		session.ExpiresAt().Sub(now))
+	return nil
+}
+
+func (uc *SessionUseCase) RevokeSessionWithAccessToken(ctx context.Context, accessToken string) error {
+	ctx, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	hAccessT, err := uc.hasher.Hash(accessToken)
+	if err != nil {
+		return err
+	}
+	s, err := uc.repo.GetSessionByAccessToken(ctx, hAccessT)
+	if err != nil {
+		return err
+	}
+	if err = uc.RevokeSession(ctx, s.ID()); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
 	return nil
 }

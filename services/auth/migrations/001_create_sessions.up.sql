@@ -1,7 +1,7 @@
 CREATE TABLE sessions
 (
     id           VARCHAR PRIMARY KEY,
-    user_id      VARCHAR     NOT NULL,
+    user_id      VARCHAR     NOT NULL REFERENCES users (id),
     user_agent   TEXT,
     ip           VARCHAR     NOT NULL,
     hashed_token VARCHAR     NOT NULL UNIQUE,

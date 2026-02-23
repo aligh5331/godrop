@@ -14,5 +14,5 @@ type UserRepository interface {
 	Delete(ctx context.Context, user *entity.User) error
 
 	//Transaction
-	BeginTx(ctx context.Context) (UserRepository, Transaction, error)
+	BeginTx(ctx context.Context) (context.Context, Transaction, error)
 }

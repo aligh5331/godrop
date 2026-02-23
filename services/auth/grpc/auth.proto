@@ -1,0 +1,124 @@
+syntax = "proto3";
+
+package auth;
+
+option go_package = "github.com/aligh5331/godrop/services/auth/grpc/auth";
+
+service AuthService  {
+  rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc ChangePassword(ChangePasswordRequest) returns (LoginResponse);
+  rpc UpdateName(UpdateNameRequest) returns (UpdateNameResponse);
+  rpc UpdateEmail(UpdateEmailRequest) returns (UpdateEmailResponse);
+  rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+  rpc RefreshSession(RefreshSessionRequest) returns (TokenPair);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  rpc RevokeAllSessions(RevokeAllSessionsRequest) returns (RevokeAllSessionsResponse);
+  rpc CheckSession(CheckSessionRequest) returns (CheckSessionResponse);
+  rpc GetUserSessions(GetUserSessionsRequest) returns (GetUserSessionsResponse);
+}
+
+message MetaData {
+  string ip = 1;
+  string user_agent = 2;
+}
+
+message GetUserSessionsResponse{
+  repeated Session sessions = 1;
+}
+
+message Session {
+  string session_id = 1;
+  MetaData meta_data = 2;
+}
+
+message GetUserSessionsRequest {
+  string user_id = 1;
+}
+
+message CheckSessionResponse{}
+message CheckSessionRequest {
+  string access_token = 1;
+}
+
+
+message RevokeAllSessionsResponse{}
+message RevokeAllSessionsRequest {
+  string user_id = 1;
+}
+
+
+message RevokeSessionResponse{}
+message RevokeSessionRequest {
+  string session_id = 1;
+}
+
+message LogoutResponse{}
+message LogoutRequest {
+  string access_token = 1;
+}
+
+message RefreshSessionRequest{
+  string refresh_token = 1;
+}
+
+message UpdateNameResponse{}
+message UpdateNameRequest {
+  string user_id = 1;
+  string new_name = 2;
+}
+
+message UpdateEmailResponse{}
+message UpdateEmailRequest {
+  string user_id = 1;
+  string new_email = 2;
+  string password = 3;
+}
+message DeleteUserRequest {
+  string user_id = 1;
+  string password = 2;
+}
+
+message DeleteUserResponse {}
+
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+  MetaData meta_data = 3;
+}
+
+message LoginResponse {
+  TokenPair tokens = 1;
+  User user = 2;
+}
+message TokenPair {
+  string access_token = 1;
+  string refresh_token = 2;
+}
+message RegisterRequest {
+  string email = 1;
+  string name = 2;
+  string password = 3;
+  MetaData meta_data = 4;
+}
+
+message RegisterResponse {
+  TokenPair tokens = 1;
+  User user = 2;
+}
+
+message ChangePasswordRequest {
+  string user_id = 1;
+  string old_password = 2;
+  string new_password = 3;
+  MetaData meta_data = 4;
+}
+
+
