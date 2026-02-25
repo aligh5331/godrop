@@ -9,5 +9,5 @@ import (
 type UserUceCase interface {
 	GetUser(ctx context.Context, id string) (*dto.User, error)
 	ChangeUserName(ctx context.Context, id string, name string) (*dto.User, error)
-	DeleteUser(ctx context.Context, id string) (*dto.User, error)
+	DeleteUser(ctx context.Context, id string) error
 }
