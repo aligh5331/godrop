@@ -8,7 +8,6 @@ import (
 
 type CoreRepository interface {
 	//User
-	GetUser(ctx context.Context, id string) (*entity.User, error)
 	SaveUser(ctx context.Context, user *entity.User) (*entity.User, error)
 	DeleteUser(ctx context.Context, id string) error
 	//Folder
