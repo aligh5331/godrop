@@ -7,7 +7,7 @@ import (
 )
 
 type FolderUseCase interface {
-	GetFolder(ctx context.Context, id string) (dto.Folder, error)
+	GetFolder(ctx context.Context, id string) (*dto.Folder, error)
 	CreateFolder(ctx context.Context, in dto.CreateFolderInputs) (*dto.Folder, error)
 	MoveFolder(ctx context.Context, in dto.MoveFolderInputs) (*dto.Folder, error)
 	UpdateFolderName(ctx context.Context, in dto.UpdateFolderName) (*dto.Folder, error)
