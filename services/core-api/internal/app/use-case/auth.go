@@ -8,12 +8,12 @@ import (
 	"github.com/aligh5331/godrop/services/core-api/internal/app/helpers"
 	"github.com/aligh5331/godrop/services/core-api/internal/domain/entity"
 	"github.com/aligh5331/godrop/services/core-api/internal/domain/repo"
-	"github.com/aligh5331/godrop/services/core-api/internal/domain/services"
+	"github.com/aligh5331/godrop/services/core-api/internal/domain/service"
 )
 
 type AuthUseCse struct {
 	repo      repo.CoreRepository
-	auth      services.AuthService
+	auth      service.AuthService
 	validator helpers.Validator
 	idGen     helpers.IdGenerator
 }
