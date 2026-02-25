@@ -2,18 +2,22 @@ package entity
 
 import (
 	"strings"
+	"time"
 
 	"github.com/aligh5331/godrop/services/core-api/internal/domain"
 )
 
 type Folder struct {
-	id       string
-	name     string
-	userId   string
-	parentId *string
+	id        string
+	name      string
+	userId    string
+	parentId  *string
+	createdAt time.Time
+	updatedAt time.Time
+	deletedAt time.Time
 }
 
-func NewFolder(id string, name string, userId string, parentId string) (*Folder, error) {
+func NewFolder(id, name, userId string, parentId *string, createdAt, updatedAt time.Time) (*Folder, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return nil, domain.ErrEmptyID
@@ -26,15 +30,13 @@ func NewFolder(id string, name string, userId string, parentId string) (*Folder,
 	if userId == "" {
 		return nil, domain.ErrEmptyUserID
 	}
-	parentId = strings.TrimSpace(parentId)
-	if parentId == "" {
-		return nil, domain.ErrEmptyParentID
-	}
 	return &Folder{
-		id:       id,
-		name:     name,
-		userId:   userId,
-		parentId: &parentId,
+		id:        id,
+		name:      name,
+		userId:    userId,
+		parentId:  parentId,
+		createdAt: createdAt,
+		updatedAt: updatedAt,
 	}, nil
 }
 

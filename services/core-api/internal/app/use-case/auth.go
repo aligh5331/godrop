@@ -2,6 +2,7 @@ package use_case
 
 import (
 	"context"
+	"time"
 
 	"github.com/aligh5331/godrop/services/core-api/internal/app/dto"
 	"github.com/aligh5331/godrop/services/core-api/internal/app/helpers"
@@ -30,7 +31,7 @@ func (uc *AuthUseCse) Login(ctx context.Context, in dto.Login) (*dto.TokenPairs,
 }
 
 func (uc *AuthUseCse) Register(ctx context.Context, in dto.Register) (*dto.TokenPairs, error) {
-
+	now := time.Now()
 	tokens, err := uc.auth.Register(ctx, in.Name, in.Email, in.Password)
 	if err != nil {
 		return nil, err
@@ -42,29 +43,23 @@ func (uc *AuthUseCse) Register(ctx context.Context, in dto.Register) (*dto.Token
 		}
 	}()
 
-	txCtx, tx, txErr := uc.repo.BeginTx(ctx)
-	if txErr != nil {
-		return nil, txErr
+	ctx, tx, err := uc.repo.BeginTx(ctx)
+	if err != nil {
+		return nil, err
 	}
 	defer tx.Rollback()
-	err = func() error {
-		user := entity.NewUser(tokens.User.ID)
-		if _, err := uc.repo.SaveUser(txCtx, user); err != nil {
-			return err
-		}
 
-		rootFolder, err := entity.NewRootFolder(uc.idGen.NewID(), tokens.User.ID)
-		if err != nil {
-			return err
-		}
+	user := entity.NewUser(tokens.User.ID, now)
+	if err := uc.repo.CreateUser(ctx, user); err != nil {
+		return nil, err
+	}
 
-		if _, err := uc.repo.SaveFolder(txCtx, rootFolder); err != nil {
-			return err
-		}
-		return nil
-	}()
-
+	rootFolder, err := entity.NewRootFolder(uc.idGen.NewID(), tokens.User.ID)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := uc.repo.CreateFolder(ctx, rootFolder); err != nil {
 		return nil, err
 	}
 
