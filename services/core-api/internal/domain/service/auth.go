@@ -19,4 +19,5 @@ type AuthService interface {
 	RevokeAllSessions(ctx context.Context, userID string) error
 	CheckSessionIsValid(ctx context.Context, accessToken string) bool
 	GetUserSessions(ctx context.Context, userID string) ([]*dto.Session, error)
+	GetUser(ctx context.Context, id string) (*dto.User, error)
 }
