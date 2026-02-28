@@ -10,7 +10,7 @@ type AuthService interface {
 	Login(ctx context.Context, email, password string) (*dto.TokenPairs, error)
 	Register(ctx context.Context, name, email, password string) (*dto.TokenPairs, error)
 	ChangePassword(ctx context.Context, userID, newPass, OldPass string) (*dto.TokenPairs, error)
-	UpdateName(ctx context.Context, userID, newName string) (*dto.User, error)
+	UpdateName(ctx context.Context, userID, newName string) error
 	UpdateEmail(ctx context.Context, userID, newEmail, pass string) (*dto.TokenPairs, error)
 	DeleteUser(ctx context.Context, userID, pass string) error
 	RefreshSession(ctx context.Context, refreshToken string) (*dto.TokenPairs, error)
