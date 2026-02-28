@@ -14,11 +14,13 @@ type Folder struct {
 }
 
 type MoveFolderInputs struct {
-	FolderID string `json:"folder_id"`
-	ParentID string `json:"parent_id"`
+	UserID      string `json:"user_id"`
+	FolderID    string `json:"folder_id"`
+	NewParentID string `json:"new_parent_id"`
 }
 
 type UpdateFolderName struct {
+	UserID   string `json:"user_id"`
 	FolderID string `json:"folder_id"`
 	NewName  string `json:"new_name"`
 }

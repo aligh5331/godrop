@@ -40,16 +40,19 @@ func NewFolder(id, name, userId string, parentId *string, createdAt, updatedAt t
 	}, nil
 }
 
-func NewRootFolder(id string, userId string) (*Folder, error) {
+func NewRootFolder(id string, userId string, now time.Time) (*Folder, error) {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return nil, domain.ErrEmptyID
 	}
 	name := "root"
 	return &Folder{
-		id:     id,
-		name:   name,
-		userId: userId,
+		id:        id,
+		name:      name,
+		userId:    userId,
+		parentId:  nil,
+		createdAt: now,
+		updatedAt: now,
 	}, nil
 }
 
@@ -64,4 +67,10 @@ func (f *Folder) UserId() string {
 }
 func (f *Folder) ParentId() *string {
 	return f.parentId
+}
+func (f *Folder) CreatedAt() time.Time {
+	return f.createdAt
+}
+func (f *Folder) UpdatedAt() time.Time {
+	return f.updatedAt
 }

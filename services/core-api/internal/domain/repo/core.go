@@ -11,11 +11,12 @@ type CoreRepository interface {
 	CreateUser(ctx context.Context, user *entity.User) error
 	DeleteUser(ctx context.Context, id string) error
 	//Folder
-	GetFolder(ctx context.Context, id string) (*entity.Folder, error)
+	GetFolder(ctx context.Context, folderID, userID string) (*entity.Folder, error)
 	CreateFolder(ctx context.Context, folder *entity.Folder) error
-	UpdateFolderName(ctx context.Context, folderId, newName string) (*entity.Folder, error)
-	MoveFolder(ctx context.Context, folderId, newParentId string) (*entity.Folder, error)
-	DeleteFolder(ctx context.Context, id string) error
+	UpdateFolderName(ctx context.Context, folderId, newName, userID string) (*entity.Folder, error)
+	MoveFolder(ctx context.Context, folderId, newParentId, userID string) (*entity.Folder, error)
+	DeleteFolder(ctx context.Context, folderID, userID string) error
+	IsDescendant(ctx context.Context, parentID, childID string) (bool, error)
 	//Transactoin
 	BeginTx(ctx context.Context) (context.Context, Transaction, error)
 }

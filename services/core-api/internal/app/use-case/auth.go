@@ -54,7 +54,7 @@ func (uc *AuthUseCse) Register(ctx context.Context, in dto.Register) (*dto.Token
 		return nil, err
 	}
 
-	rootFolder, err := entity.NewRootFolder(uc.idGen.NewID(), tokens.User.ID)
+	rootFolder, err := entity.NewRootFolder(uc.idGen.NewID(), tokens.User.ID, now)
 	if err != nil {
 		return nil, err
 	}
