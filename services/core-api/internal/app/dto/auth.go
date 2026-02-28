@@ -12,7 +12,7 @@ type Login struct {
 }
 
 type TokenPairs struct {
-	User         User
+	User         *User
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }
