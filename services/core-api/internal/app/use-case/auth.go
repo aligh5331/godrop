@@ -39,7 +39,7 @@ func (uc *AuthUseCse) Register(ctx context.Context, in dto.Register) (*dto.Token
 	var success bool
 	defer func() {
 		if !success {
-			_ = uc.auth.DeleteUser(ctx, tokens.User.ID)
+			_ = uc.auth.DeleteUser(ctx, tokens.User.ID, in.Password)
 		}
 	}()
 

@@ -19,6 +19,6 @@ func (uc *UserUseCase) ChangeUserName(ctx context.Context, id string, newName st
 	return uc.auth.UpdateName(ctx, id, newName)
 }
 
-func (uc *UserUseCase) DeleteUser(ctx context.Context, id string) error {
-	return uc.auth.DeleteUser(ctx, id)
+func (uc *UserUseCase) DeleteUser(ctx context.Context, id, pass string) error {
+	return uc.auth.DeleteUser(ctx, id, pass)
 }
